@@ -1,9 +1,9 @@
 # Getty - Semantiful Differentials
 
-Getty is a tool to support Continuous Semantic Inspection (CSI) for Java projects.
+Getty is a tool to support Semantic-Assisted Code Review (SCR) for Java projects.
 
-### *Continuous Semantic Inspection*
-CSI is a process for developers to inspect behavioral changes before patching the system. 
+### *Semantic-Assisted Code Review*
+SCR is a process for developers to inspect behavioral changes before patching the system. 
 In addition to source code changes, developers are suggested to review semantic change summaries. 
 Like Continuous Integration (CI) that supports effortless testing, CSI provides change summaries with little effort from developers.
 
@@ -123,11 +123,11 @@ The projects Getty can analyze should satisfy the following criteria:
   That's it!
 
 ### *Demos & Misc*
-[Here](http://sosa08.ucsd.edu:7999/sema.diff.html) is an *outdated* demo of the source-impact isolated CSI view, for the commit ("#7", the introductory commit) we discussed in our submitted ICSE paper under review. If the reviewers are interested in the case study in the paper, here is [our latest user interface](http://sosa08.ucsd.edu:8000/sema.diff.html) displayed for commit #4, the commit that actually introduced the "equals" bug we discussed in the paper.
+[Here](http://sosa08.ucsd.edu:7999/sema.diff.html) is an *outdated* demo of the source-impact isolated SCR view, for the commit ("#7", the introductory commit) we discussed in our submitted ICSE paper under review. If the reviewers are interested in the case study in the paper, here is [our latest user interface](http://sosa08.ucsd.edu:8000/sema.diff.html) displayed for commit #4, the commit that actually introduced the "equals" bug we discussed in the paper.
 
 Please note that our latest user interface has been changed moderately (a refined UI style, more enriched features and integration of impact-isolated views) with updated Daikon library, but most other part of the UI resembles the past.
 
 We have also updated the textual-diffing algorithm for invariant matching, which gives slightly cleaner diffing results; but ideally, we would like to further enhance it to a real semantic diffing algorithm backed by a theorem prover, which is currently WIP for future applications.
   
 ### *Support*
-Please send email to the authors ({yayan, mmenarini, wgg} 'AT' cs 'dot' ucsd 'dot' edu) to discuss Getty, or to post questions.
+Please send email to the authors ({yayan, mmenarini, wgg} 'AT' ucsd 'dot' edu) to discuss Getty, or to post questions.
