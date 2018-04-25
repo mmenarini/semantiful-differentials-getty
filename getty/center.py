@@ -295,9 +295,7 @@ def one_info_pass(
         testSuites = junit_torun.split(" ")
         for prefix in testSuites:
             prefix = prefix + ":"
-            #print "\n*******************prefix " + prefix
             package = invocation[0][:(len(prefix))]
-            #print "\n********************package " + package + "\n"
             if prefix == package:
                 isATest = True
         if isATest:
@@ -312,10 +310,12 @@ def one_info_pass(
                         nonTestMethodCalls[invocation[0]].union(nonTestMethodCalls[k])
             else:
                 nonTestMethodCalls[invocation[0]] = set([invocation[1]])
-
-    # for key in nonTestMethodCalls.keys():
-    #     for caller in nonTestMethodCalls[key]:
-    #         print "\n" + this_hash + "**************caller: " + key + " callee: " + caller + "\n"
+        for caller in nonTestMethodCalls:
+            for callee in nonTestMethodCalls[caller]:
+                if callee in methods_to_tests and caller in methods_to_tests:
+                    methods_to_tests[callee].union(methods_to_tests[caller])
+                elif caller in methods_to_tests:
+                    methods_to_tests[callee] = methods_to_tests[caller]
 
     # for key in methods_to_tests.keys():
     #     for caller in methods_to_tests[key]:
