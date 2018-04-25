@@ -271,7 +271,58 @@ def one_info_pass(
 
     os.merge_dyn_files(dyng_go, go, "_getty_dyncg_-hash-_.ex", this_hash)
     os.merge_dyn_files(dyng_go, go, "_getty_dynfg_-hash-_.ex", this_hash)
-    
+
+    ######getting method -> tests info
+    methods_to_tests = {}
+    fname =  go + "_getty_dyncg_" + this_hash + "_.ex"
+    with open(fname) as f:
+        content = f.readlines()
+    content[0] = content[0][2:]
+    content[-1] = content[-1][:-2]
+    total_pairs = []
+    nonTestMethodCalls = {}
+    for line in content:
+        pairs = line.split("), (")
+        total_pairs = total_pairs + pairs
+    for pair in total_pairs:
+        invocation = pair.split("\", ")
+        for i in range (0,2):
+            j = -1
+            while invocation[i][j] != "-":
+                j -= 1
+            invocation[i] = (invocation[i][:j]).replace("\"", "")
+        isATest = False
+        testSuites = junit_torun.split(" ")
+        for prefix in testSuites:
+            prefix = prefix + ":"
+            #print "\n*******************prefix " + prefix
+            package = invocation[0][:(len(prefix))]
+            #print "\n********************package " + package + "\n"
+            if prefix == package:
+                isATest = True
+        if isATest:
+            if invocation[1] in methods_to_tests.keys():
+                methods_to_tests[invocation[1]].add(invocation[0])
+            else:
+                methods_to_tests[invocation[1]] = set([invocation[0]])
+        else:
+            if invocation[0] in nonTestMethodCalls.keys():
+                for k in nonTestMethodCalls[invocation[0]]:
+                    if k in nonTestMethodCalls:
+                        nonTestMethodCalls[invocation[0]].union(nonTestMethodCalls[k])
+            else:
+                nonTestMethodCalls[invocation[0]] = set([invocation[1]])
+
+    # for key in nonTestMethodCalls.keys():
+    #     for caller in nonTestMethodCalls[key]:
+    #         print "\n" + this_hash + "**************caller: " + key + " callee: " + caller + "\n"
+
+    # for key in methods_to_tests.keys():
+    #     for caller in methods_to_tests[key]:
+    #         print "\n" + this_hash + "**************callee: " + key + " caller: " + caller + "\n"
+
+    ###########
+
     caller_of, callee_of = agency.caller_callee(go, this_hash)
     pred_of, succ_of = agency.pred_succ(go, this_hash)
     
