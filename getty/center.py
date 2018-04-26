@@ -273,8 +273,40 @@ def one_info_pass(
     os.merge_dyn_files(dyng_go, go, "_getty_dynfg_-hash-_.ex", this_hash)
 
     ######getting method -> tests info
-    methods_to_tests = {}
     fname =  go + "_getty_dyncg_" + this_hash + "_.ex"
+    methods_to_tests = create_methods_to_tests(fname, junit_torun)
+
+    for key in methods_to_tests.keys():
+        for caller in methods_to_tests[key]:
+            print "\n" + this_hash + "**************callee: " + key + " caller: " + caller + "\n"
+
+    ###########
+
+    caller_of, callee_of = agency.caller_callee(go, this_hash)
+    pred_of, succ_of = agency.pred_succ(go, this_hash)
+    
+    # add test methods into target set
+    test_set = agency.get_test_set_dyn(target_set, callee_of, junit_torun)
+    
+    # reset target set here
+    refined_target_set, changed_methods, changed_tests = \
+        agency.refine_targets(full_method_info_map, target_set, test_set,
+                              caller_of, callee_of, pred_of, succ_of,
+                              changed_methods, changed_tests, 
+                              inner_dataflow_methods, outer_dataflow_methods)
+        
+    profiler.log_csv(["method_count", "test_count", "refined_target_count"],
+                     [[len(target_set), len(test_set), len(refined_target_set)]], 
+                     go + "_getty_y_method_count_" + this_hash + "_.profile.readable")
+    
+    git.clear_temp_checkout(this_hash)
+    
+    return common_package, test_set, refined_target_set, changed_methods, changed_tests, \
+        cp, junit_torun, full_method_info_map
+
+
+def create_methods_to_tests(fname, junit_torun):
+    methods_to_tests = {}
     with open(fname) as f:
         content = f.readlines()
     content[0] = content[0][2:]
@@ -286,7 +318,7 @@ def one_info_pass(
         total_pairs = total_pairs + pairs
     for pair in total_pairs:
         invocation = pair.split("\", ")
-        for i in range (0,2):
+        for i in range(0, 2):
             j = -1
             while invocation[i][j] != "-":
                 j -= 1
@@ -316,34 +348,7 @@ def one_info_pass(
                     methods_to_tests[callee].union(methods_to_tests[caller])
                 elif caller in methods_to_tests:
                     methods_to_tests[callee] = methods_to_tests[caller]
-
-    # for key in methods_to_tests.keys():
-    #     for caller in methods_to_tests[key]:
-    #         print "\n" + this_hash + "**************callee: " + key + " caller: " + caller + "\n"
-
-    ###########
-
-    caller_of, callee_of = agency.caller_callee(go, this_hash)
-    pred_of, succ_of = agency.pred_succ(go, this_hash)
-    
-    # add test methods into target set
-    test_set = agency.get_test_set_dyn(target_set, callee_of, junit_torun)
-    
-    # reset target set here
-    refined_target_set, changed_methods, changed_tests = \
-        agency.refine_targets(full_method_info_map, target_set, test_set,
-                              caller_of, callee_of, pred_of, succ_of,
-                              changed_methods, changed_tests, 
-                              inner_dataflow_methods, outer_dataflow_methods)
-        
-    profiler.log_csv(["method_count", "test_count", "refined_target_count"],
-                     [[len(target_set), len(test_set), len(refined_target_set)]], 
-                     go + "_getty_y_method_count_" + this_hash + "_.profile.readable")
-    
-    git.clear_temp_checkout(this_hash)
-    
-    return common_package, test_set, refined_target_set, changed_methods, changed_tests, \
-        cp, junit_torun, full_method_info_map
+    return methods_to_tests
 
 
 # one pass template
