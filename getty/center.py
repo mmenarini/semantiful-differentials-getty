@@ -276,9 +276,10 @@ def one_info_pass(
     fname =  go + "_getty_dyncg_" + this_hash + "_.ex"
     methods_to_tests = create_methods_to_tests(fname, junit_torun)
 
-    for key in methods_to_tests.keys():
-        for caller in methods_to_tests[key]:
-            print "\n" + this_hash + "**************callee: " + key + " caller: " + caller + "\n"
+    #For debugging
+    #for key in methods_to_tests.keys():
+    #    for caller in methods_to_tests[key]:
+    #        print "\n" + this_hash + "callee: " + key + " caller: " + caller + "\n"
 
     ###########
 
