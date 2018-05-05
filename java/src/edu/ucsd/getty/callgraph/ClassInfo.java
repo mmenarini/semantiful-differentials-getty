@@ -16,6 +16,7 @@ import org.apache.bcel.generic.MethodGen;
 import org.apache.bcel.generic.ObjectType;
 import org.apache.bcel.generic.ReferenceType;
 
+
 public class ClassInfo {
 
 	private final JavaClass self;
@@ -30,22 +31,23 @@ public class ClassInfo {
 	// will be set more in analyzer
 	public Set<String> supers;  // super class (maybe more for interface) and iterfaces
 	public Set<String> subs;  // sub classes or implementations
-	public HashMap<String, Set<String>> classReferences;
+	public Set<String> classReferences;
 
 	public ClassInfo(JavaClass self) {
 		this.self = self;
-		this.classReferences = new HashMap<String, Set<String>>();
+		this.classReferences = new HashSet<String>();
 		this.qualifiedName = self.getClassName();
 		this.packageName = self.getPackageName();
 		this.methods = methods2stringSet(self.getMethods());
 		/*Megan’s code*/
 		Get_Referenced_Classes();
 		/**/
+
 		this.supers = superclassNinterfaces();
 		this.subs = new HashSet<String>();
 	}
 
-	private void Get_Referenced_Classes() {
+	public void Get_Referenced_Classes() {
 		ConstantPool cp = this.self.getConstantPool();
 		ConstantPoolGen cpg = new ConstantPoolGen(cp);
 		for(Method m : this.self.getMethods()){
@@ -72,23 +74,14 @@ public class ClassInfo {
 			}
 		}
 		//for debugging of class references
-//		for (String key: this.classReferences.keySet()){
-//			for ( String rclass: this.classReferences.get(key)){
-//				System.out.println("\nKey: " + key + " Value: " + rclass + "\n");
-//			}
+//		for (String rclass: this.classReferences){
+//			System.out.println("\nValue: " + rclass + "\n");
 //		}
 	}
 
-	private void addReferencedClass(String referencedClassName) {
+	public void addReferencedClass(String referencedClassName) {
 		if(!(referencedClassName.equals(this.qualifiedName))) {
-			if( this.classReferences.containsKey(this.qualifiedName)){
-				this.classReferences.get(this.qualifiedName).add(referencedClassName);
-			}
-			else {
-				Set<String> temp = new HashSet<String>();
-				temp.add(referencedClassName);
-				this.classReferences.put(this.qualifiedName, temp);
-			}
+			this.classReferences.add(referencedClassName);
 		}
 	}
 

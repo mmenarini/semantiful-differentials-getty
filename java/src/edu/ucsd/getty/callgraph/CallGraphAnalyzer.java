@@ -1,5 +1,6 @@
 package edu.ucsd.getty.callgraph;
 
+import java.io.FileOutputStream;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -21,6 +22,8 @@ public class CallGraphAnalyzer {
 	
 	private String packagePrefix;
 	private Set<String> allProjectMethods;
+	public HashMap<String, Set<String>> classDependencies;
+	public HashMap<String, Set<String>> typesToMethods;
 
 	public CallGraphAnalyzer(String pkgPrefix) {
 		this.packagePrefix = pkgPrefix;
@@ -31,8 +34,7 @@ public class CallGraphAnalyzer {
 		this("");
 	}
 	
-	private void spread(String methodname, ClassInfo classinfo,
-			Map<String, ClassInfo> classinfotable) {
+	private void spread(String methodname, ClassInfo classinfo, Map<String, ClassInfo> classinfotable) {
 		for (String subclassname : classinfo.subs) {
 			if (classinfotable.keySet().contains(subclassname)) {				
 				ClassInfo subclassinfo = classinfotable.get(subclassname);
@@ -48,6 +50,8 @@ public class CallGraphAnalyzer {
 	public CallGraph analyze(String... paths) {
 		this.allProjectMethods.clear();
 		CallGraph callgraph = null;
+		this.classDependencies = new HashMap<String, Set<String>>();
+		this.typesToMethods = new HashMap<String, Set<String>>();
 		try {
 			List<JavaClass> allClasses = ClassLocator.loadFrom(paths);
 			Map<String, JavaClass> classTable = new HashMap<String, JavaClass>();
@@ -88,7 +92,38 @@ public class CallGraphAnalyzer {
 					}
 				}
 			}
-			
+			// fourth pass grab dependencies
+			for (String classname : allclassnames) {
+				ClassInfo classinfo = classInfoTable.get(classname);
+				System.out.println();
+				if (!(this.classDependencies.containsKey(classname))) {
+					Set<String> temp = new HashSet<String>();
+					this.classDependencies.put(classname, temp);
+				}
+				//get all referenced classes into table
+				for (String rclass : classinfo.classReferences) {
+					//Filtering out external classes (libraries) because we assume they will not change.
+					// Otherwise we will have to potientially run every test.
+					if (allclassnames.contains(rclass)) {
+						this.classDependencies.get(classname).add(rclass);
+					}
+				}
+				//get all super classes and interfaces classinfo.supers have immediate parents and interfaces
+				for (String pclass : classinfo.supers) {
+					//Filtering out external classes (libraries) because we assume they will not change.
+					// Otherwise we will have to potientially run every test.
+					if (allclassnames.contains(pclass)) {
+						this.classDependencies.get(classname).add(pclass);
+					}
+				}
+				//for debugging class dependencies
+//				for ( String dependency: this.classDependencies.get(classname)){
+//					System.out.println("\nKey: " + classname + " dependency: " + dependency + "\n");
+//				}
+			}
+			//get typesToMethods
+			getTypesToMethods(classInfoTable);
+
 			callgraph = new CallGraph(staticInvocations, classInfoTable);
 			
 			return callgraph;
@@ -98,7 +133,42 @@ public class CallGraphAnalyzer {
 			return null;
 		}
 	}
-	
+
+	private void getTypesToMethods(Map<String, ClassInfo> classInfoTable) {
+		for(String classname : classDependencies.keySet()){
+			//add this classes methods
+			this.typesToMethods.put(classname, new HashSet<String>());
+			Set<String> nextClasses = new HashSet<String>();
+			Set<String> seenClasses = new HashSet<String>();
+			nextClasses.add(classname);
+			while(!(nextClasses.isEmpty())){
+				Set<String> currentClasses = nextClasses;
+				nextClasses = new HashSet<String>();
+				for( String clazz : currentClasses) {
+					if (this.typesToMethods.containsKey(clazz) && clazz != classname){
+						this.typesToMethods.get(classname).addAll(this.typesToMethods.get(clazz));
+					} else {
+						ClassInfo classinfo = classInfoTable.get(clazz);
+						for (String method : classinfo.methods) {
+							this.typesToMethods.get(classname).add(clazz + ":" + method);
+						}
+						for( String c : this.classDependencies.get(clazz)) {
+							if ( !(seenClasses.contains(c))) {
+								nextClasses.add(c);
+							}
+						}
+					}
+					seenClasses.add(clazz);
+				}
+			}
+			//new FileOutputStream("Dependencies.txt", true).close();
+			//for debugging
+//			for ( String method: this.typesToMethods.get(classname)){
+//				System.out.println("\nKey: " + classname + " method: " + method + "\n");
+//			}
+		}
+	}
+
 	public Set<String> getAllProjectMethods() {
 		return allProjectMethods;
 	}
