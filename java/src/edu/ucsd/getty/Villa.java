@@ -211,8 +211,23 @@ public class Villa {
 
 			
 			/**********************************/
-			ITraceFinder chain_generator = get_generator(target_path, package_prefix, revised_methods);
-			
+			CandidateGenerator cGen = get_generator(target_path, package_prefix, revised_methods);
+			ITraceFinder chain_generator = (ITraceFinder) cGen;
+
+			try(FileWriter fw = new FileWriter(output_dir + "Dependencies" + this_commit + ".txt", true);
+				BufferedWriter bw = new BufferedWriter(fw);
+				PrintWriter out = new PrintWriter(bw))
+			{
+				for (String key : cGen.getTypesToMethods().keySet()){
+					for ( String method: cGen.getTypesToMethods().get(key)){
+						out.println("key:" + key + "method: " + method + ",");
+					}
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(22);
+			}
+
 			Set<String> all_project_methods = chain_generator.getAllProjectMethods();
 //					System.out.println(all_project_methods);
 			String apm_out_path = output_dir + "_getty_allmtd_src_" + this_commit + "_.ex";
@@ -309,8 +324,26 @@ public class Villa {
 			
 			
 			/**********************************/
-			ITraceFinder chain_generator = get_generator(target_path, package_prefix, revised_methods);
-			
+			CandidateGenerator cGen = get_generator(target_path, package_prefix, revised_methods);
+			ITraceFinder chain_generator = (ITraceFinder) cGen;
+
+			try(FileWriter fw = new FileWriter(output_dir + "Dependencies" + curr_commit + ".txt", true);
+				BufferedWriter bw = new BufferedWriter(fw);
+				PrintWriter out = new PrintWriter(bw))
+			{
+
+				for (String key : cGen.getTypesToMethods().keySet()){
+					for ( String method: cGen.getTypesToMethods().get(key)){
+						out.println("key:" + key + " method:" + method + ",");
+					}
+				}
+				out.println("test");
+				//more code
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(22);
+			}
+
 			Set<String> all_project_methods = chain_generator.getAllProjectMethods();
 //					System.out.println(all_project_methods);
 			String apm_out_path = output_dir + "_getty_allmtd_src_" + curr_commit + "_.ex";
@@ -364,10 +397,9 @@ public class Villa {
 			output_to(chgtests_out_path, revised_tests);
 			
 			/************************************************/
-			ITraceFinder chain_generator_improved = get_generator(target_path, package_prefix, revised_methods);
-			
+			ITraceFinder chain_generator_improved = (ITraceFinder) get_generator(target_path, package_prefix, revised_methods);
 			output_dataflow_approx(output_dir, chain_generator_improved, curr_commit);
-			
+
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(2);
@@ -406,7 +438,8 @@ public class Villa {
 			Set<String> all_project_methods = DataStructureBuilder.loadSetFrom(
 					output_dir + "_getty_allmtd_src_" + prev_commit + "_.ex");
 			Set<String> possible_ignored_revised_methods = SetOperations.intersection(revised_methods_new, all_project_methods);
-			
+			//
+
 			// improved revised_methods
 			Set<String> revised_methods = SetOperations.union(revised_methods_old, possible_ignored_revised_methods);
 			String improved_chgmtd_out_path = output_dir + "_getty_chgmtd_src_" + curr_commit + "_" + prev_commit + "_.ex";
@@ -422,8 +455,8 @@ public class Villa {
 					"<recovery mode>: IMPROVED, number of added methods: " + added_methods.size() + "\n"
 							+ "  output to file --> " + added_chgmtd_out_path + " ...\n");
 			output_to(added_chgmtd_out_path, added_methods);
-			
-			ITraceFinder chain_generator_improved = get_generator(target_path, package_prefix, revised_methods);
+
+			ITraceFinder chain_generator_improved = (ITraceFinder) get_generator(target_path, package_prefix, revised_methods);
 			output_dataflow_approx(output_dir, chain_generator_improved, prev_commit);
 			
 		} catch (Exception e) {
@@ -534,9 +567,9 @@ public class Villa {
 		out_file.close();
 	}
 	
-	private static ITraceFinder get_generator(String target_path, String package_prefix, Set<String> revised_methods) {
+	private static CandidateGenerator get_generator(String target_path, String package_prefix, Set<String> revised_methods) {
 		System.out.println("\nGetting all project methods, call graphs and candidate call chains ...\n");
-		ITraceFinder chain_generator = new CandidateGenerator(revised_methods, target_path, package_prefix);
+		CandidateGenerator chain_generator = new CandidateGenerator(revised_methods, target_path, package_prefix);
 		return chain_generator;
 	}
 	

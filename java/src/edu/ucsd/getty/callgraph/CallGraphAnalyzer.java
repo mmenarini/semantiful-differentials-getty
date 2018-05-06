@@ -1,11 +1,15 @@
 package edu.ucsd.getty.callgraph;
 
-import java.io.FileOutputStream;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.io.IOException;
+import java.io.FileWriter;
+import java.io.BufferedWriter;
+import java.io.PrintWriter;
 
 import org.apache.bcel.classfile.JavaClass;
 import org.apache.bcel.classfile.Method;
@@ -45,6 +49,10 @@ public class CallGraphAnalyzer {
 				}
 			}
 		}
+	}
+
+	public HashMap<String, Set<String>> getTypesToMethods(){
+		return this.typesToMethods;
 	}
 	
 	public CallGraph analyze(String... paths) {
@@ -122,7 +130,7 @@ public class CallGraphAnalyzer {
 //				}
 			}
 			//get typesToMethods
-			getTypesToMethods(classInfoTable);
+			this.calculateTypesToMethods(classInfoTable);
 
 			callgraph = new CallGraph(staticInvocations, classInfoTable);
 			
@@ -134,7 +142,7 @@ public class CallGraphAnalyzer {
 		}
 	}
 
-	private void getTypesToMethods(Map<String, ClassInfo> classInfoTable) {
+	private void calculateTypesToMethods(Map<String, ClassInfo> classInfoTable) {
 		for(String classname : classDependencies.keySet()){
 			//add this classes methods
 			this.typesToMethods.put(classname, new HashSet<String>());
@@ -161,12 +169,12 @@ public class CallGraphAnalyzer {
 					seenClasses.add(clazz);
 				}
 			}
-			//new FileOutputStream("Dependencies.txt", true).close();
+		}
+
 			//for debugging
 //			for ( String method: this.typesToMethods.get(classname)){
 //				System.out.println("\nKey: " + classname + " method: " + method + "\n");
 //			}
-		}
 	}
 
 	public Set<String> getAllProjectMethods() {
