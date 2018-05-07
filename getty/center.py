@@ -275,6 +275,10 @@ def one_info_pass(
     ######getting method -> tests info
     fname =  go + "_getty_dyncg_" + this_hash + "_.ex"
     methods_to_tests = create_methods_to_tests(fname, junit_torun)
+    file = open(go + "_methods_to_tests_" + this_hash + "_.ex", "w+");
+    for key in methods_to_tests.keys():
+       for caller in methods_to_tests[key]:
+           file.write(key + "," + caller + "\n")
 
     #For debugging
     #for key in methods_to_tests.keys():
@@ -310,18 +314,17 @@ def create_methods_to_tests(fname, junit_torun):
     methods_to_tests = {}
     with open(fname) as f:
         content = f.readlines()
-    content[0] = content[0][2:]
-    content[-1] = content[-1][:-2]
     total_pairs = []
     nonTestMethodCalls = {}
     for line in content:
+        line.strip("[()]")
         pairs = line.split("), (")
         total_pairs = total_pairs + pairs
     for pair in total_pairs:
         invocation = pair.split("\", ")
         for i in range(0, 2):
             j = -1
-            while invocation[i][j] != "-":
+            while invocation[i][j] != "(":
                 j -= 1
             invocation[i] = (invocation[i][:j]).replace("\"", "")
         isATest = False

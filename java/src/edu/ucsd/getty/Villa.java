@@ -214,13 +214,13 @@ public class Villa {
 			CandidateGenerator cGen = get_generator(target_path, package_prefix, revised_methods);
 			ITraceFinder chain_generator = (ITraceFinder) cGen;
 
-			try(FileWriter fw = new FileWriter(output_dir + "Dependencies" + this_commit + ".txt", true);
+			try(FileWriter fw = new FileWriter(output_dir + "_types_to_methods_" + this_commit + "_.ex", true);
 				BufferedWriter bw = new BufferedWriter(fw);
 				PrintWriter out = new PrintWriter(bw))
 			{
 				for (String key : cGen.getTypesToMethods().keySet()){
 					for ( String method: cGen.getTypesToMethods().get(key)){
-						out.println("key:" + key + "method: " + method + ",");
+						out.println(key + "," + method + ";");
 					}
 				}
 			} catch (IOException e) {
@@ -327,17 +327,16 @@ public class Villa {
 			CandidateGenerator cGen = get_generator(target_path, package_prefix, revised_methods);
 			ITraceFinder chain_generator = (ITraceFinder) cGen;
 
-			try(FileWriter fw = new FileWriter(output_dir + "Dependencies" + curr_commit + ".txt", true);
+			try(FileWriter fw = new FileWriter(output_dir + "_types_to_methods_"+ curr_commit + "_.ex", true);
 				BufferedWriter bw = new BufferedWriter(fw);
 				PrintWriter out = new PrintWriter(bw))
 			{
 
 				for (String key : cGen.getTypesToMethods().keySet()){
 					for ( String method: cGen.getTypesToMethods().get(key)){
-						out.println("key:" + key + " method:" + method + ",");
+						out.println(key + "," + method + ";");
 					}
 				}
-				out.println("test");
 				//more code
 			} catch (IOException e) {
 				e.printStackTrace();

@@ -45,8 +45,10 @@ def visit(villa_path, pwd, proj_dir, go, prev_hash, post_hash, pkg_prefix="-"):
     print "******" + go
     print "******" + prev_hash
     print "******" + post_hash
-    os.remove_file(go + "Dependencies" + prev_hash + ".txt");
-    os.remove_file(go + "Dependencies" + post_hash + ".txt");
+    os.remove_file(go + "_types_to_methods_" + prev_hash  + "_.ex");
+    os.remove_file(go + "_types_to_methods_" + post_hash   + "_.ex");
+    os.remove_file(go + "_methods_to_tests_" + prev_hash + "_.ex");
+    os.remove_file(go + "_methods_to_tests_" + post_hash + "_.ex");
     run_villa = "java -jar {0} -s {1} {2} {3} {4} {5} {6} -o {7}".format(
         villa_path, diff_out, bin_path, test_src_rel_path, pkg_prefix, prev_hash, post_hash, go)
     run_villa_l4ms = "java -jar {0} -l {1} {2} {3} -o {4}".format(
