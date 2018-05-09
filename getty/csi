@@ -20,7 +20,7 @@ from tools.git import (
     get_remote_head,
     restore_and_pop_last
 )
-from tools.os import cwd, remove_many_files
+from tools.os import cwd, remove_many_files, remove_file
 
 
 def show_help():
@@ -212,7 +212,12 @@ if __name__ == "__main__":
     should_further_recover = backup_and_stash_first()
     # clean up output directory
     remove_many_files(go, "_getty_*")
-    
+    remove_file(go + "_types_to_methods_" + prev_hash  + "_.ex");
+    remove_file(go + "_types_to_methods_" + post_hash   + "_.ex");
+    remove_file(go + "_methods_to_tests_" + prev_hash + "_.ex");
+    remove_file(go + "_methods_to_tests_" + post_hash + "_.ex");
+    remove_file(go + "_types_to_tests_" + post_hash + "_.ex");
+    remove_file(go + "_types_to_tests_" + post_hash + "_.ex");
     '''
         multi-stage analysis: Villa (code) and Center (invariants) 
     '''
