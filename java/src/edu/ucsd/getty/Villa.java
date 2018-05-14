@@ -220,7 +220,7 @@ public class Villa {
 			{
 				for (String key : cGen.getTypesToMethods().keySet()){
 					for ( String method: cGen.getTypesToMethods().get(key)){
-						out.println(key + "," + method + ";");
+						out.println(key + "," + method);
 					}
 				}
 			} catch (IOException e) {
@@ -334,7 +334,7 @@ public class Villa {
 
 				for (String key : cGen.getTypesToMethods().keySet()){
 					for ( String method: cGen.getTypesToMethods().get(key)){
-						out.println(key + "," + method + ";");
+						out.println(key + "," + method);
 					}
 				}
 				//more code

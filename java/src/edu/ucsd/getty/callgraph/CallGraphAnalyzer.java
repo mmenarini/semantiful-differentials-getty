@@ -144,26 +144,34 @@ public class CallGraphAnalyzer {
 
 	private void calculateTypesToMethods(Map<String, ClassInfo> classInfoTable) {
 		for(String classname : classDependencies.keySet()){
-			//add this classes methods
-			this.typesToMethods.put(classname, new HashSet<String>());
+			if(!(this.typesToMethods.containsKey(classname))) {
+				this.typesToMethods.put(classname, new HashSet<String>());
+			}
 			Set<String> nextClasses = new HashSet<String>();
 			Set<String> seenClasses = new HashSet<String>();
-			nextClasses.add(classname);
+			ClassInfo classinfo = classInfoTable.get(classname);
+			for (String method : classinfo.methods) {
+				this.typesToMethods.get(classname).add(classname + ":" + method);
+			}
+			for( String c : this.classDependencies.get(classname)) {
+				nextClasses.add(c);
+			}
 			while(!(nextClasses.isEmpty())){
 				Set<String> currentClasses = nextClasses;
 				nextClasses = new HashSet<String>();
 				for( String clazz : currentClasses) {
-					if (this.typesToMethods.containsKey(clazz) && clazz != classname){
-						this.typesToMethods.get(classname).addAll(this.typesToMethods.get(clazz));
-					} else {
-						ClassInfo classinfo = classInfoTable.get(clazz);
-						for (String method : classinfo.methods) {
-							this.typesToMethods.get(classname).add(clazz + ":" + method);
+					ClassInfo clazzinfo = classInfoTable.get(clazz);
+					if (!(this.typesToMethods.containsKey(clazz))){
+						this.typesToMethods.put(clazz, new HashSet<String>());
+					}
+					for(String method : classinfo.methods) {
+						if(clazzinfo.methods.contains(method)) {
+							this.typesToMethods.get(clazz).add(classname + ":" + method);
 						}
-						for( String c : this.classDependencies.get(clazz)) {
-							if ( !(seenClasses.contains(c))) {
-								nextClasses.add(c);
-							}
+					}
+					for( String c : this.classDependencies.get(clazz)) {
+						if ( !(seenClasses.contains(c))) {
+							nextClasses.add(c);
 						}
 					}
 					seenClasses.add(clazz);

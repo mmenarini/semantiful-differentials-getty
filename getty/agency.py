@@ -105,9 +105,9 @@ def refine_targets(full_method_info_map, target_set, test_set,
                    caller_of, callee_of, pred_of, succ_of,
                    changed_methods, changed_tests,
                    inner_dataflow_methods, outer_dataflow_methods):
-    target_set = set([])
-    for ky in full_method_info_map.keys():
-        target_set.add(full_method_info_map[ky])
+    # target_set = set([])
+    # for ky in full_method_info_map.keys():
+    #     target_set.add(full_method_info_map[ky])
     refined_target_set = set(deepcopy(target_set))
     
     cmbak = _correct_offset(changed_methods, full_method_info_map)
