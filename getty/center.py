@@ -311,7 +311,11 @@ def one_info_pass(
             temp = type + ":"
             if s[:len(temp)] == temp:
                 for method in types_to_methods[type]:
-                    new_target_set.add(method.strip("\n"))
+                    for m in methods_to_tests:
+                        temp = method.strip("\n") + "("
+                        if m[:len(temp)] == temp:
+                            methodNumber = m.split("-")
+                            new_target_set.add((method.strip("\n")) + "-" + methodNumber[1])
                 for test in types_to_tests[type]:
                     tests_to_run.add(test)
                     types.add(type)
@@ -330,7 +334,6 @@ def one_info_pass(
     pred_of, succ_of = agency.pred_succ(go, this_hash)
 
     # add test methods into target set
-    target_set = new_target_set
     test_set = agency.get_test_set_dyn(new_target_set, callee_of, junit_torun)
     #test_set is correct
     # reset target set here
