@@ -18,7 +18,7 @@ public class CandidateGenerator implements ITraceFinder {
 	private Set<String> changedMethods;
 	private Set<String> allProjectMethods;
 	private String binaryPath;
-	
+	private HashMap<String, Set<String>> typesToMethods;
 	private CallGraph callgraph;
 
 	public CandidateGenerator(
@@ -27,6 +27,7 @@ public class CandidateGenerator implements ITraceFinder {
 		this.binaryPath = binaryPath;
 		CallGraphAnalyzer analyzer = new CallGraphAnalyzer(packagePrefix);
 		this.callgraph = analyzer.analyze(this.binaryPath);
+		this.typesToMethods = analyzer.getTypesToMethods();
 		this.allProjectMethods = analyzer.getAllProjectMethods();
 	}
 	
@@ -34,7 +35,11 @@ public class CandidateGenerator implements ITraceFinder {
 			Set<String> changed, String binaryPath) {
 		this(changed, binaryPath, "");
 	}
-	
+
+	public HashMap<String, Set<String>> getTypesToMethods(){
+		return this.typesToMethods;
+	}
+
 	@Override
 	public Set<String> getAllProjectMethods() {
 		return this.allProjectMethods;
