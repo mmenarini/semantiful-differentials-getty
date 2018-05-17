@@ -25,7 +25,6 @@ def checkout_build(proj_dir, commit_hash):
 
 
 def visit(villa_path, pwd, proj_dir, go, prev_hash, post_hash, pkg_prefix="-"):
-    
     print("\n****************************************************************");
     print("        Getty Villa: Semantiful Differential Analyzer             ");
     print("****************************************************************\n");
@@ -42,7 +41,9 @@ def visit(villa_path, pwd, proj_dir, go, prev_hash, post_hash, pkg_prefix="-"):
             remember to clear after this pass
     '''
     bin_path, src_rel_path, test_src_rel_path = checkout_build(proj_dir, prev_hash)
-    
+    print "******" + go
+    print "******" + prev_hash
+    print "******" + post_hash
     run_villa = "java -jar {0} -s {1} {2} {3} {4} {5} {6} -o {7}".format(
         villa_path, diff_out, bin_path, test_src_rel_path, pkg_prefix, prev_hash, post_hash, go)
     run_villa_l4ms = "java -jar {0} -l {1} {2} {3} -o {4}".format(
