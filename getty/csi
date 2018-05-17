@@ -136,7 +136,7 @@ def set_args():
         else:
             prev_hash = sys.argv[1]
             post_hash = get_hash("HEAD")
-    elif len(sys.argv) == 3 or len(sys.argv) == 4:
+    elif len(sys.argv) == 3 or len(sys.argv) == 4 or len(sys.argv) == 5:
         hash_regex = "(([a-z0-9]{5,})|HEAD)(~(\d+)*){0,1}"
         index_regex = "(^-(\d+))|0"
         absolute_index_regex = "^~(\d+)"
@@ -176,6 +176,26 @@ def set_args():
             elif sys.argv[3] == "-i":
                 isolation = True
                 go_postfix = "iso_" + prev_hash + "_" + post_hash + "/"
+            elif sys.argv[3][-5:] == ".json" and os.path.isfile(sys.argv[3]):
+                json_filepath = sys.argv[3]
+            else:
+                show_help()
+                raise ValueError("last argument should be: [issue:...] or -i")
+        if len(sys.argv) == 5:
+            issue_specific_regex = "issue:(.*)"
+            mts = re.match(issue_specific_regex, sys.argv[3])
+            if mts:
+                go_postfix = mts.group(1) + "_" + prev_hash + "_" + post_hash + "/"
+            elif sys.argv[3] == "-i":
+                isolation = True
+                go_postfix = "iso_" + prev_hash + "_" + post_hash + "/"
+                if sys.argv[4][-5:] == ".json" and os.path.isfile(sys.argv[4]):
+                    json_filepath = sys.argv[4]
+            elif sys.argv[3][-5:] == ".json" and os.path.isfile(sys.argv[3]):
+                json_filepath = sys.argv[3]
+                if sys.argv[4] == "-i":
+                    isolation = True
+                    go_postfix = "iso_" + prev_hash + "_" + post_hash + "/"
             else:
                 show_help()
                 raise ValueError("last argument should be: [issue:...] or -i")
@@ -183,7 +203,7 @@ def set_args():
         raise ValueError("number of arguments should be 0~3")
     # consider using `git rev-parse --short HEAD` if shorter names are preferred
     
-    return prev_hash, post_hash, go_postfix, isolation
+    return prev_hash, post_hash, go_postfix, isolation, json_filepath
 
 
 if __name__ == "__main__":
@@ -193,7 +213,7 @@ if __name__ == "__main__":
         pwd, proj_dir, go, dyng_go, fe_path, cust_mvn_repo = config_env()
     
     ## args checking & setting
-    prev_hash, post_hash, go_postfix, iso = set_args()
+    prev_hash, post_hash, go_postfix, iso, json_filepath = set_args()
     
     ## set new go folder if needed; keep old go folder for dynamic graph output
     go += go_postfix
@@ -265,14 +285,14 @@ if __name__ == "__main__":
                  old_changed_methods, new_changed_methods, old_changed_tests, new_changed_tests, all_changed_methods, all_changed_tests = \
                  center.visit(junit_path, sys_classpath, agent_path, cust_mvn_repo, separate_go, prev_hash, post_hash, targets, iso, \
                  old_improved_changed_methods, old_changed_tests, old_inner_dataflow_methods, old_outer_dataflow_methods, \
-                 new_improved_changed_methods, new_changed_tests, new_inner_dataflow_methods, new_outer_dataflow_methods)",
+                 new_improved_changed_methods, new_changed_tests, new_inner_dataflow_methods, new_outer_dataflow_methods, json_filepath)",
             go + "_getty_x_profile_center.profile")
     else:
         common_package, all_classes_set, all_refined_target_set, old_test_set, old_refined_target_set, new_test_set, new_refined_target_set, \
             old_changed_methods, new_changed_methods, old_changed_tests, new_changed_tests, all_changed_methods, all_changed_tests = \
             center.visit(junit_path, sys_classpath, agent_path, cust_mvn_repo, separate_go, prev_hash, post_hash, targets, iso,
                          old_improved_changed_methods, old_changed_tests, old_inner_dataflow_methods, old_outer_dataflow_methods, 
-                         new_improved_changed_methods, new_changed_tests, new_inner_dataflow_methods, new_outer_dataflow_methods)
+                         new_improved_changed_methods, new_changed_tests, new_inner_dataflow_methods, new_outer_dataflow_methods, json_filepath)
     
     old_caller_of, old_callee_of = agency.caller_callee(go, prev_hash)
     old_pred_of, old_succ_of = agency.pred_succ(go, prev_hash)

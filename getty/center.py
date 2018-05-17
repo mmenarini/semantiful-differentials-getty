@@ -188,7 +188,7 @@ def get_expansion_set(go):
 # one pass template
 def one_info_pass(
         junit_path, sys_classpath, agent_path, cust_mvn_repo, dyng_go, go, this_hash, target_set,
-        changed_methods, changed_tests, inner_dataflow_methods, outer_dataflow_methods):
+        changed_methods, changed_tests, inner_dataflow_methods, outer_dataflow_methods, json_filepath):
     os.sys_call("git checkout " + this_hash)
     os.sys_call("mvn clean")
 
@@ -301,12 +301,12 @@ def one_info_pass(
     #        f.write(key + "," + test + "\n")
     # f.close()
 
-    with open(go + "data.json") as f:
+    with open(json_filepath) as f:
         priorities = json.load(f)
     tests_to_run = set()
     types = set()
     new_target_set = set()
-    for s in priorities["computationPriority"]:
+    for s in priorities["priorityList"]:
         for type in types_to_tests.keys():
             temp = type + ":"
             if s[:len(temp)] == temp:
@@ -321,7 +321,7 @@ def one_info_pass(
                     types.add(type)
                     # print "s: " + s + "type: " + type + " test " + test
     ###########
-    tests_for_junit = set();
+    tests_for_junit = set()
     for test in tests_to_run:
         i = test.rfind(":")
         temp = test[:i]
@@ -640,7 +640,7 @@ def _common_specific_expansion(expansion, old_method_info_map, new_method_info_m
 # the main entrance
 def visit(junit_path, sys_classpath, agent_path, cust_mvn_repo, separate_go, prev_hash, post_hash, targets, iso,
           old_changed_methods, old_changed_tests, old_inner_dataflow_methods, old_outer_dataflow_methods,
-          new_changed_methods, new_changed_tests, new_inner_dataflow_methods, new_outer_dataflow_methods):
+          new_changed_methods, new_changed_tests, new_inner_dataflow_methods, new_outer_dataflow_methods, json_filepath):
     
     dyng_go = separate_go[0]
     go = separate_go[1]
@@ -656,7 +656,7 @@ def visit(junit_path, sys_classpath, agent_path, cust_mvn_repo, separate_go, pre
      old_changed_methods, old_changed_tests, old_cp, old_junit_torun, old_method_info_map) = \
         one_info_pass(
             junit_path, sys_classpath, agent_path, cust_mvn_repo, dyng_go, go, prev_hash, targets,
-            old_changed_methods, old_changed_tests, old_inner_dataflow_methods, old_outer_dataflow_methods)
+            old_changed_methods, old_changed_tests, old_inner_dataflow_methods, old_outer_dataflow_methods, json_filepath)
     
     '''
         2-nd pass: checkout post_commit as detached head, and get new interested targets
@@ -665,7 +665,7 @@ def visit(junit_path, sys_classpath, agent_path, cust_mvn_repo, separate_go, pre
      new_changed_methods, new_changed_tests, new_cp, new_junit_torun, new_method_info_map) = \
         one_info_pass(
             junit_path, sys_classpath, agent_path, cust_mvn_repo, dyng_go, go, post_hash, targets,
-            new_changed_methods, new_changed_tests, new_inner_dataflow_methods, new_outer_dataflow_methods)
+            new_changed_methods, new_changed_tests, new_inner_dataflow_methods, new_outer_dataflow_methods, json_filepath)
 
 
     '''
