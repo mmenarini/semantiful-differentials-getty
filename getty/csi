@@ -118,6 +118,7 @@ def config_env():
 def set_args():
     isolation = False
     go_postfix = ""
+    json_filepath = ""
     if len(sys.argv) == 1:
         remote_head = get_remote_head()
         prev_hash = get_hash(remote_head)
@@ -180,7 +181,7 @@ def set_args():
                 json_filepath = sys.argv[3]
             else:
                 show_help()
-                raise ValueError("last argument should be: [issue:...] or -i")
+                raise ValueError("last argument should be: [issue:...] or -i or file to json")
         if len(sys.argv) == 5:
             issue_specific_regex = "issue:(.*)"
             mts = re.match(issue_specific_regex, sys.argv[3])
@@ -189,16 +190,21 @@ def set_args():
             elif sys.argv[3] == "-i":
                 isolation = True
                 go_postfix = "iso_" + prev_hash + "_" + post_hash + "/"
-                if sys.argv[4][-5:] == ".json" and os.path.isfile(sys.argv[4]):
-                    json_filepath = sys.argv[4]
-            elif sys.argv[3][-5:] == ".json" and os.path.isfile(sys.argv[3]):
-                json_filepath = sys.argv[3]
+                if sys.argv[4][-5:] == ".json":
+                    if os.path.isfile(sys.argv[4]):
+                        json_filepath = sys.argv[4]
+            elif sys.argv[3][-5:] == ".json":
+                if os.path.isfile(sys.argv[3]):
+                    json_filepath = sys.argv[3]
                 if sys.argv[4] == "-i":
                     isolation = True
                     go_postfix = "iso_" + prev_hash + "_" + post_hash + "/"
+                else:
+                    show_help()
+                    raise ValueError("last argument should be: [issue:...] or -i")
             else:
                 show_help()
-                raise ValueError("last argument should be: [issue:...] or -i")
+                raise ValueError("last argument should be: [issue:...] or -i or file to json")
     else:
         raise ValueError("number of arguments should be 0~3")
     # consider using `git rev-parse --short HEAD` if shorter names are preferred

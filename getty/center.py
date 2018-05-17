@@ -273,77 +273,76 @@ def one_info_pass(
 
     os.merge_dyn_files(dyng_go, go, "_getty_dyncg_-hash-_.ex", this_hash)
     os.merge_dyn_files(dyng_go, go, "_getty_dynfg_-hash-_.ex", this_hash)
+    if json_filepath != "":
+        ######getting method -> tests info
+        fname =  go + "_getty_dyncg_" + this_hash + "_.ex"
+        methods_to_tests = create_methods_to_tests(fname, junit_torun)
 
-    ######getting method -> tests info
-    fname =  go + "_getty_dyncg_" + this_hash + "_.ex"
-    methods_to_tests = create_methods_to_tests(fname, junit_torun)
+        #get types_to_methods
+        types_to_methods = read_in_types_to_methods(go, this_hash)
 
-    #get types_to_methods
-    types_to_methods = read_in_types_to_methods(go, this_hash)
-
-    types_to_tests = {}
-    #f = open(go + "_types_to_tests_" + this_hash + "_.ex", "w+")
-    for key in types_to_methods.keys():
-        for method in types_to_methods.get(key):
-            method = method.strip("\n")
-            method = method + "("
-            for m in methods_to_tests.keys():
-                method_name = m[:(len(method))]
-                if method_name == method:
-                    for test in methods_to_tests[m]:
-                        if key in types_to_tests.keys():
-                            types_to_tests[key].add(test)
-                        else:
-                            types_to_tests[key] = set([test])
-    #For debugging
-    # for key in types_to_tests.keys():
-    #    for test in types_to_tests[key]:
-    #        f.write(key + "," + test + "\n")
-    # f.close()
-
-    with open(json_filepath) as f:
-        priorities = json.load(f)
-    tests_to_run = set()
-    types = set()
-    new_target_set = set()
-    for s in priorities["priorityList"]:
-        for type in types_to_tests.keys():
-            temp = type + ":"
-            if s[:len(temp)] == temp:
-                for method in types_to_methods[type]:
-                    for m in methods_to_tests:
-                        temp = method.strip("\n") + "("
-                        if m[:len(temp)] == temp:
-                            methodNumber = m.split("-")
-                            new_target_set.add((method.strip("\n")) + "-" + methodNumber[1])
-                for test in types_to_tests[type]:
-                    tests_to_run.add(test)
-                    types.add(type)
-                    # print "s: " + s + "type: " + type + " test " + test
-    ###########
-    tests_for_junit = set()
-    for test in tests_to_run:
-        i = test.rfind(":")
-        temp = test[:i]
-        tests_for_junit.add(temp)
-    for temp in tests_for_junit:
-        junit_to_run = junit_to_run + " " + temp
-    junit_torun = junit_to_run
+        types_to_tests = {}
+        #f = open(go + "_types_to_tests_" + this_hash + "_.ex", "w+")
+        for key in types_to_methods.keys():
+            for method in types_to_methods.get(key):
+                method = method.strip("\n")
+                method = method + "("
+                for m in methods_to_tests.keys():
+                    method_name = m[:(len(method))]
+                    if method_name == method:
+                        for test in methods_to_tests[m]:
+                            if key in types_to_tests.keys():
+                                types_to_tests[key].add(test)
+                            else:
+                                types_to_tests[key] = set([test])
+        #For debugging
+        # for key in types_to_tests.keys():
+        #    for test in types_to_tests[key]:
+        #        f.write(key + "," + test + "\n")
+        # f.close()
+        with open(json_filepath) as f:
+            priorities = json.load(f)
+        tests_to_run = set()
+        types = set()
+        target_set = set()
+        for s in priorities["priorityList"]:
+            for type in types_to_tests.keys():
+                temp = type + ":"
+                if s[:len(temp)] == temp:
+                    for method in types_to_methods[type]:
+                        for m in methods_to_tests:
+                            temp = method.strip("\n") + "("
+                            if m[:len(temp)] == temp:
+                                methodNumber = m.split("-")
+                                target_set.add((method.strip("\n")) + "-" + methodNumber[1])
+                    for test in types_to_tests[type]:
+                        tests_to_run.add(test)
+                        types.add(type)
+                        # print "s: " + s + "type: " + type + " test " + test
+        ###########
+        tests_for_junit = set()
+        for test in tests_to_run:
+            i = test.rfind(":")
+            temp = test[:i]
+            tests_for_junit.add(temp)
+        for temp in tests_for_junit:
+            junit_to_run = junit_to_run + " " + temp
+        junit_torun = junit_to_run
 
     caller_of, callee_of = agency.caller_callee(go, this_hash)
     pred_of, succ_of = agency.pred_succ(go, this_hash)
 
     # add test methods into target set
-    test_set = agency.get_test_set_dyn(new_target_set, callee_of, junit_torun)
+    test_set = agency.get_test_set_dyn(target_set, callee_of, junit_torun)
     #test_set is correct
     # reset target set here
     refined_target_set, changed_methods, changed_tests = \
-        agency.refine_targets(full_method_info_map, new_target_set, test_set,
+        agency.refine_targets(full_method_info_map, target_set, test_set,
                               caller_of, callee_of, pred_of, succ_of,
                               changed_methods, changed_tests,
                               inner_dataflow_methods, outer_dataflow_methods)
     profiler.log_csv(["method_count", "test_count", "refined_target_count"],
-                     [[len(new_target_set), len(test_set), len(refined_target_set)]],
+                     [[len(target_set), len(test_set), len(refined_target_set)]],
                      go + "_getty_y_method_count_" + this_hash + "_.profile.readable")
     
     git.clear_temp_checkout(this_hash)

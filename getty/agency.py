@@ -110,7 +110,10 @@ def refine_targets(full_method_info_map, target_sett, test_set,
         if ky in target_sett:
             target_set.add(full_method_info_map[ky])
     refined_target_set = set(deepcopy(target_set))
-    
+
+    print "test setttttt"
+    print test_set
+
     cmbak = _correct_offset(changed_methods, full_method_info_map)
     changed_methods = set([])
     for cm in cmbak:
