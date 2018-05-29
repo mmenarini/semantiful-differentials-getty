@@ -274,14 +274,28 @@ def one_info_pass(
     caller_of, callee_of = agency.caller_callee(go, this_hash)
     pred_of, succ_of = agency.pred_succ(go, this_hash)
     if json_filepath != "":
-        junit_to_run = ""
+        junits_to_run = junit_torun.split(" ")
+        junit_to_run = junits_to_run[0]
         ######getting method -> tests
         fname =  go + "_getty_dyncg_" + this_hash + "_.ex"
         methods_to_tests, nontest_method_calls = create_methods_to_tests(fname, junit_torun)
-        print "method_to_tests"
-        print methods_to_tests
         #get types_to_methods
         types_to_methods = read_in_types_to_methods(go, this_hash)
+
+        types_to_tests = {}
+        #f = open(go + "_types_to_tests_" + this_hash + "_.ex", "w+")
+        for key in types_to_methods.keys():
+            for method in types_to_methods.get(key):
+                method = method.strip("\n")
+                method = method + "("
+                for m in methods_to_tests.keys():
+                    method_name = m[:(len(method))]
+                    if method_name == method:
+                        for test in methods_to_tests[m]:
+                            if key in types_to_tests.keys():
+                                types_to_tests[key].add(test)
+                            else:
+                                types_to_tests[key] = set([test])
 
         with open(json_filepath) as f:
             priorities = json.load(f)
@@ -298,9 +312,14 @@ def one_info_pass(
             if method:
                 methodNumber = method[(method.rfind("-")):]
                 target_set.add(priority + methodNumber)
-                for test in methods_to_tests[method]:
-                    tests_to_run.add(test)
+                # for test in methods_to_tests[method]:
+                #     tests_to_run.add(test)
                 methods_to_check.add(method)
+                index = priority.find(":")
+                type = priority[:index]
+                for test in types_to_tests[type]:
+                    tests_to_run.add(test)
+
             else:
                 index = priority.find(":")
                 type = priority[:index]
@@ -315,7 +334,9 @@ def one_info_pass(
                                 if key[:len(m)] == m:
                                     methodNumber = key[(key.rfind("-")):]
                                     target_set.add(m + methodNumber)
-                                    for test in methods_to_tests[key]:
+                                    # for test in methods_to_tests[key]:
+                                    #     tests_to_run.add(test)
+                                    for test in types_to_tests[type]:
                                         tests_to_run.add(test)
                                     methods_to_check.add(key)
             seen_methods = set([])
@@ -331,8 +352,12 @@ def one_info_pass(
                                     method_name = callee[:(callee.find("("))]
                                     line_number = callee[(callee.rfind("-")):]
                                     target_set.add(method_name + line_number)
-                                    for test in methods_to_tests[callee]:
+                                    index = callee.find(":")
+                                    type = callee[:index]
+                                    for test in types_to_tests[type]:
                                         tests_to_run.add(test)
+                                    # for test in methods_to_tests[callee]:
+                                    #     tests_to_run.add(test)
                     methods_to_check.remove(m)
                         # print "s: " + s + "type: " + type + " test " + test
         ###########
@@ -344,9 +369,10 @@ def one_info_pass(
         for temp in tests_for_junit:
             junit_to_run = junit_to_run + " " + temp
         junit_torun = junit_to_run
-        test_set = tests_to_run
-    else:
-        test_set = agency.get_test_set_dyn(target_set, callee_of, junit_torun)
+        #test_set = tests_to_run
+
+    #else:
+    test_set = agency.get_test_set_dyn(target_set, callee_of, junit_torun)
 
     #test_set is correct
     # reset target set here
@@ -355,6 +381,14 @@ def one_info_pass(
                               caller_of, callee_of, pred_of, succ_of,
                               changed_methods, changed_tests,
                               inner_dataflow_methods, outer_dataflow_methods, json_filepath)
+    print "Targetttt settt"
+    print target_set
+    print "rrrrrrefined_target_set"
+    print refined_target_set
+    print "CCCchanged_methods"
+    print changed_methods
+    print "CCCchanged_tests"
+    print changed_tests
     profiler.log_csv(["method_count", "test_count", "refined_target_count"],
                      [[len(target_set), len(test_set), len(refined_target_set)]],
                      go + "_getty_y_method_count_" + this_hash + "_.profile.readable")
