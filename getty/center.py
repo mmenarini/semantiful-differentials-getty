@@ -225,8 +225,6 @@ def one_info_pass(
     os.sys_call("mvn test-compile")
     
     junit_torun = mvn.junit_torun_str(cust_mvn_repo)
-    junit_tests = junit_torun.split(" ")
-    junit_to_run = junit_tests[0]
     if SHOW_DEBUG_INFO:
         print "\n===junit torun===\n" + junit_torun + "\n"
     
@@ -273,51 +271,69 @@ def one_info_pass(
 
     os.merge_dyn_files(dyng_go, go, "_getty_dyncg_-hash-_.ex", this_hash)
     os.merge_dyn_files(dyng_go, go, "_getty_dynfg_-hash-_.ex", this_hash)
+    caller_of, callee_of = agency.caller_callee(go, this_hash)
+    pred_of, succ_of = agency.pred_succ(go, this_hash)
     if json_filepath != "":
-        ######getting method -> tests info
+        junit_to_run = ""
+        ######getting method -> tests
         fname =  go + "_getty_dyncg_" + this_hash + "_.ex"
-        methods_to_tests = create_methods_to_tests(fname, junit_torun)
-
+        methods_to_tests, nontest_method_calls = create_methods_to_tests(fname, junit_torun)
+        print "method_to_tests"
+        print methods_to_tests
         #get types_to_methods
         types_to_methods = read_in_types_to_methods(go, this_hash)
 
-        types_to_tests = {}
-        #f = open(go + "_types_to_tests_" + this_hash + "_.ex", "w+")
-        for key in types_to_methods.keys():
-            for method in types_to_methods.get(key):
-                method = method.strip("\n")
-                method = method + "("
-                for m in methods_to_tests.keys():
-                    method_name = m[:(len(method))]
-                    if method_name == method:
-                        for test in methods_to_tests[m]:
-                            if key in types_to_tests.keys():
-                                types_to_tests[key].add(test)
-                            else:
-                                types_to_tests[key] = set([test])
-        #For debugging
-        # for key in types_to_tests.keys():
-        #    for test in types_to_tests[key]:
-        #        f.write(key + "," + test + "\n")
-        # f.close()
         with open(json_filepath) as f:
             priorities = json.load(f)
         tests_to_run = set()
-        types = set()
         target_set = set()
-        for s in priorities["priorityList"]:
-            for type in types_to_tests.keys():
-                temp = type + ":"
-                if s[:len(temp)] == temp:
-                    for method in types_to_methods[type]:
-                        for m in methods_to_tests:
-                            temp = method.strip("\n") + "("
-                            if m[:len(temp)] == temp:
-                                methodNumber = m.split("-")
-                                target_set.add((method.strip("\n")) + "-" + methodNumber[1])
-                    for test in types_to_tests[type]:
-                        tests_to_run.add(test)
-                        types.add(type)
+        methods_to_check = set()
+        for priority in priorities["priorityList"]:
+            s = priority + "("
+            method = ""
+            for m in methods_to_tests:
+                if m[:len(s)] == s:
+                    method = m
+                    break
+            if method:
+                methodNumber = method[(method.rfind("-")):]
+                target_set.add(priority + methodNumber)
+                for test in methods_to_tests[method]:
+                    tests_to_run.add(test)
+                methods_to_check.add(method)
+            else:
+                index = priority.find(":")
+                type = priority[:index]
+                method_name = priority[index:]
+                method_name = method_name.strip()
+                if type in types_to_methods:
+                    for m in types_to_methods[type]:
+                        m = m.strip()
+                        i = m.rfind(":")
+                        if m[i:] == method_name:
+                            for key in methods_to_tests:
+                                if key[:len(m)] == m:
+                                    methodNumber = key[(key.rfind("-")):]
+                                    target_set.add(m + methodNumber)
+                                    for test in methods_to_tests[key]:
+                                        tests_to_run.add(test)
+                                    methods_to_check.add(key)
+            seen_methods = set([])
+            while methods_to_check:
+                to_check = set(methods_to_check)
+                for m in to_check:
+                    if not m in seen_methods:
+                        seen_methods.add(m)
+                        if m in nontest_method_calls.keys():
+                            for callee in nontest_method_calls[m]:
+                                methods_to_check.add(callee)
+                                if callee in methods_to_tests:
+                                    method_name = callee[:(callee.find("("))]
+                                    line_number = callee[(callee.rfind("-")):]
+                                    target_set.add(method_name + line_number)
+                                    for test in methods_to_tests[callee]:
+                                        tests_to_run.add(test)
+                    methods_to_check.remove(m)
                         # print "s: " + s + "type: " + type + " test " + test
         ###########
         tests_for_junit = set()
@@ -328,12 +344,10 @@ def one_info_pass(
         for temp in tests_for_junit:
             junit_to_run = junit_to_run + " " + temp
         junit_torun = junit_to_run
+        test_set = tests_to_run
+    else:
+        test_set = agency.get_test_set_dyn(target_set, callee_of, junit_torun)
 
-    caller_of, callee_of = agency.caller_callee(go, this_hash)
-    pred_of, succ_of = agency.pred_succ(go, this_hash)
-
-    # add test methods into target set
-    test_set = agency.get_test_set_dyn(target_set, callee_of, junit_torun)
     #test_set is correct
     # reset target set here
     refined_target_set, changed_methods, changed_tests = \
@@ -370,26 +384,32 @@ def create_methods_to_tests(fname, junit_torun):
         content = f.readlines()
     total_pairs = []
     nonTestMethodCalls = {}
+    #read in line to get method calls
     for line in content:
-        line.strip("[()]")
+        line = line.strip("[()]")
         pairs = line.split("), (")
         total_pairs = total_pairs + pairs
     for pair in total_pairs:
         invocation = pair.split("\", ")
+        #invocation[0] is caller invocation[1] is callee and invocation[2] is number of times called
+        #invocation [2] is not needed for this analysis, can throw away.
         for i in range(0, 2):
             invocation[i] = (invocation[i]).replace("\"", "")
         isATest = False
+        #junit_torun is one string, split by space to get each test suite name
         testSuites = junit_torun.split(" ")
-        for prefix in testSuites:
-            prefix = prefix + ":"
-            package = invocation[0][:(len(prefix))]
-            if prefix == package:
-                isATest = True
+        #get package name from invocation, package name is package[0]
+        package = invocation[0].split(":")
+        #check if package name is a test suite. if so then it is a test.
+        if package[0] in testSuites:
+            isATest = True
+        #if it is a test store in methods to tests
         if isATest:
             if invocation[1] in methods_to_tests.keys():
                 methods_to_tests[invocation[1]].add(invocation[0])
             else:
                 methods_to_tests[invocation[1]] = set([invocation[0]])
+        #if not a test then it is a method calling another method
         else:
             if invocation[0] in nonTestMethodCalls.keys():
                 for k in nonTestMethodCalls[invocation[0]]:
@@ -397,13 +417,14 @@ def create_methods_to_tests(fname, junit_torun):
                         nonTestMethodCalls[invocation[0]].union(nonTestMethodCalls[k])
             else:
                 nonTestMethodCalls[invocation[0]] = set([invocation[1]])
+        #for each caller that calls another method call, add tests for caller to callee
         for caller in nonTestMethodCalls:
             for callee in nonTestMethodCalls[caller]:
                 if callee in methods_to_tests and caller in methods_to_tests:
                     methods_to_tests[callee].union(methods_to_tests[caller])
                 elif caller in methods_to_tests:
                     methods_to_tests[callee] = methods_to_tests[caller]
-    return methods_to_tests
+    return methods_to_tests, nonTestMethodCalls
 
 
 # one pass template
