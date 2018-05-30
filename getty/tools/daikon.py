@@ -367,6 +367,7 @@ def dfformat_full(target_set):
 
 # reformat all methods together so it is recognizable by Daikon filter
 def dfformat_full_ordered(target_set, test_selection):
+    # if test selection, add methods nad tests from target set only
     method_interest_set = set()
     if test_selection:
         for target in target_set:
@@ -383,6 +384,7 @@ def dfformat_full_ordered(target_set, test_selection):
             return 'GETTY_WARNING_THIS_PATTERN_SHOULD_NOT_EXIST'
         else:
             return method_pattern
+    #else add every class, method, and test
     else:
         parent_interest_set = set()
         for target in target_set:
@@ -427,6 +429,7 @@ def dfformat_full_ordered(target_set, test_selection):
 # reformat all methods together so it is recognizable by Daikon filter
 # get more than the method name because we replace "(" with "*"
 def dfformat_full_ordered_more(target_set, test_selection):
+    #if test selection, add methods nad tests from target set only
     method_interest_set = set()
     if test_selection:
         for target in target_set:
@@ -438,6 +441,7 @@ def dfformat_full_ordered_more(target_set, test_selection):
             return 'GETTY_WARNING_THIS_PATTERN_SHOULD_NOT_EXIST'
         else:
             return method_pattern
+    #else add every class, method, and test
     else:
         parent_interest_set = set()
         for target in target_set:
