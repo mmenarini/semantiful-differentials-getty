@@ -482,8 +482,6 @@ def one_inv_pass(go, cp, junit_torun, this_hash, refined_target_set, test_select
     num_primary_workers = config.num_master_workers
     auto_parallel_targets = config.auto_fork
     slave_load = config.classes_per_fork
-    print "RERERERJKJSEHFKJHDKjf"
-    print refined_target_set
     target_map = daikon.target_s2m(refined_target_set)
     all_classes = target_map.keys()
 
