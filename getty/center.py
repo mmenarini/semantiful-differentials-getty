@@ -57,7 +57,7 @@ def sort_txt_inv(out_file):
 
 
 # get class-level expanded target set
-def all_methods_expansion(candidates, target_set, go, this_hash, index, java_cmd, inv_gz):
+def all_methods_expansion(candidates, go, this_hash, index, java_cmd, inv_gz):
     exp_tmp = go + "expansion_temp." + this_hash + "." + str(index) + ".allinvs"
     run_print_allinvs = " ".join([java_cmd, "daikon.PrintInvariants", "--output", exp_tmp, inv_gz])
     os.sys_call(run_print_allinvs, ignore_bad_exit=True)
@@ -88,13 +88,17 @@ def all_methods_expansion(candidates, target_set, go, this_hash, index, java_cmd
 
 
 # v4. flexible to be run in parallel, in daikon-online mode
-def seq_get_invs(target_set_index_pair, java_cmd, junit_torun, go, this_hash, consider_expansion):
+def seq_get_invs(target_set_index_pair, java_cmd, junit_torun, go, this_hash, consider_expansion, test_selection):
     
     index = target_set_index_pair[1]
     target_set = target_set_index_pair[0]
-    
+    if test_selection:
+        ttarget_set = set(target_set)
+        for s in ttarget_set:
+            if not s.__contains__(":"):
+                target_set.remove(s)
 #     select_pattern = daikon.select_full(target_set)
-    select_pattern = daikon.dfformat_full_ordered(target_set)
+    select_pattern = daikon.dfformat_full_ordered(target_set, test_selection)
     print "\n=== select pattern ===\n" + select_pattern + "\n"
     
     inv_gz = go + "_getty_inv_" + this_hash + "_." + index
@@ -132,7 +136,7 @@ def seq_get_invs(target_set_index_pair, java_cmd, junit_torun, go, this_hash, co
     expansion = set()
     if consider_expansion and config.class_level_expansion:
         try:
-            all_methods_expansion(expansion, target_set, go, this_hash, index, java_cmd, inv_gz)
+            all_methods_expansion(expansion, go, this_hash, index, java_cmd, inv_gz)
         except:
             pass
     
@@ -282,20 +286,6 @@ def one_info_pass(
         #get types_to_methods
         types_to_methods = read_in_types_to_methods(go, this_hash)
 
-        # types_to_tests = {}
-        # for key in types_to_methods.keys():
-        #     for method in types_to_methods.get(key):
-        #         method = method.strip("\n")
-        #         method = method + "("
-        #         for m in methods_to_tests.keys():
-        #             method_name = m[:(len(method))]
-        #             if method_name == method:
-        #                 for test in methods_to_tests[m]:
-        #                     if key in types_to_tests.keys():
-        #                         types_to_tests[key].add(test)
-        #                     else:
-        #                         types_to_tests[key] = set([test])
-
         with open(json_filepath) as f:
             priorities = json.load(f)
         tests_to_run = set()
@@ -363,7 +353,7 @@ def one_info_pass(
         junit_torun = junit_to_run
         test_set = tests_to_run
     else:
-        test_set = agency.get_test_set_dyn(target_set, callee_of, junit_torun)
+        test_set = agency.get_test_set_dyn(callee_of, junit_torun)
 
     #test_set is correct
     # reset target set here
@@ -446,53 +436,55 @@ def create_methods_to_tests(fname, junit_torun):
 
 
 # one pass template
-def one_inv_pass(go, cp, junit_torun, this_hash, refined_target_set, analysis_only=False):
-    
+def one_inv_pass(go, cp, junit_torun, this_hash, refined_target_set, test_selection, analysis_only=False):
+
     if not analysis_only:
         os.sys_call("git checkout " + this_hash)
-    
+
     os.sys_call("mvn clean")
-    
+
     if SHOW_DEBUG_INFO:
         print "\n===full classpath===\n" + cp + "\n"
-    
-    java_cmd = " ".join(["java", "-cp", cp, 
-#                          "-Xms"+config.min_heap, 
-                         "-Xmx"+config.max_heap, 
-                         "-XX:+UseConcMarkSweepGC", 
-#                          "-XX:-UseGCOverheadLimit",
+
+    java_cmd = " ".join(["java", "-cp", cp,
+                         #                          "-Xms"+config.min_heap,
+                         "-Xmx"+config.max_heap,
+                         "-XX:+UseConcMarkSweepGC",
+                         #                          "-XX:-UseGCOverheadLimit",
                          "-XX:-UseSplitVerifier",  # FIXME: JDK 8- only! 
                          ])
-    
+
     # os.sys_call("mvn test -DskipTests", ignore_bad_exit=True)
     os.sys_call("mvn test-compile")
-    
+
     if SHOW_DEBUG_INFO:
         print "\n===junit torun===\n" + junit_torun + "\n"
-    
+
     # v3.2, v4 execute with 4 core
     num_primary_workers = config.num_master_workers
     auto_parallel_targets = config.auto_fork
     slave_load = config.classes_per_fork
+    print "RERERERJKJSEHFKJHDKjf"
+    print refined_target_set
     target_map = daikon.target_s2m(refined_target_set)
     all_classes = target_map.keys()
-    
+
     consider_expansion = (not analysis_only)
-    
+
     if len(refined_target_set) <= num_primary_workers or (num_primary_workers == 1 and not auto_parallel_targets):
         single_set_tuple = (refined_target_set, "0")
-        seq_get_invs(single_set_tuple, java_cmd, junit_torun, go, this_hash, consider_expansion)
+        seq_get_invs(single_set_tuple, java_cmd, junit_torun, go, this_hash, consider_expansion, test_selection)
     elif num_primary_workers > 1:  # FIXME: this distributation is buggy
         target_set_inputs = []
         all_target_set_list = list(refined_target_set)
         each_bulk_size = int(len(refined_target_set) / num_primary_workers)
-        
-        seq_func = partial(seq_get_invs, 
+
+        seq_func = partial(seq_get_invs,
                            java_cmd=java_cmd, junit_torun=junit_torun, go=go, this_hash=this_hash,
-                           consider_expansion=consider_expansion)
+                           consider_expansion=consider_expansion, test_selection=test_selection)
         for i in range(num_primary_workers):
             if not(i == num_primary_workers - 1):
-                sub_list_tuple = (all_target_set_list[each_bulk_size*i:each_bulk_size*(i+1)], str(i))                
+                sub_list_tuple = (all_target_set_list[each_bulk_size*i:each_bulk_size*(i+1)], str(i))
                 target_set_inputs.append(sub_list_tuple)
             else:
                 sub_list_tuple = (all_target_set_list[each_bulk_size*i:], str(i))
@@ -505,15 +497,15 @@ def one_inv_pass(go, cp, junit_torun, this_hash, refined_target_set, analysis_on
         # elastic automatic processing
         target_set_inputs = []
         num_processes = 0
-        
+
         # target_map has been calculated already
         # target_map = daikon.target_s2m(refined_target_set)
         # all_classes = target_map.keys()
         num_keys = len(all_classes)
-        seq_func = partial(seq_get_invs, 
+        seq_func = partial(seq_get_invs,
                            java_cmd=java_cmd, junit_torun=junit_torun, go=go, this_hash=this_hash,
-                           consider_expansion=consider_expansion)
-        
+                           consider_expansion=consider_expansion, test_selection= test_selection)
+
         for i in range(0, num_keys, slave_load):
             # (inclusive) lower bound is i
             # (exclusive) upper bound:
@@ -526,53 +518,53 @@ def one_inv_pass(go, cp, junit_torun, this_hash, refined_target_set, analysis_on
             sublist_tuple = (sublist, str(num_processes))
             target_set_inputs.append(sublist_tuple)
             num_processes += 1
-        
+
         max_parallel_processes = config.num_slave_workers
         if not analysis_only:
             profiler.log_csv(["class_count", "process_count", "max_parallel_processes", "slave_load"],
                              [[num_keys, num_processes, max_parallel_processes, slave_load]],
                              go + "_getty_y_elastic_count_" + this_hash + "_.profile.readable")
-        
+
         input_pool = Pool(max_parallel_processes)
         input_pool.map(seq_func, target_set_inputs)
         input_pool.close()
         input_pool.join()
-        
+
     else:
         print "\nIncorrect option for one center pass:"
         print "\tnum_primary_workers:", str(num_primary_workers)
         print "\tauto_parallel_targets:", str(auto_parallel_targets)
         print "\tslave_load", str(slave_load)
         sys.exit(1)
-    
+
     if config.compress_inv:
         os.remove_many_files(go, "*.inv.gz")
     else:
         os.remove_many_files(go, "*.inv")
-    
+
     # include coverage report for compare
     if config.analyze_test_coverage and not analysis_only:
         try:
             mvn.generate_coverage_report(go, this_hash)
         except:
             pass
-    
+
     if not analysis_only:
         git.clear_temp_checkout(this_hash)
-    
-    
+
+
     if config.class_level_expansion:
         extra_expansion = get_expansion_set(go)
         os.remove_many_files(go, config.expansion_tmp_files + "*")
     else:
         extra_expansion = None
-    
+
     return all_classes, extra_expansion
 
 
 def mixed_passes(go, prev_hash, post_hash, refined_expansion_set,
                  refined_target_set, old_refined_target_set, new_refined_target_set,
-                 old_cp, new_cp, old_junit_torun, new_junit_torun):
+                 old_cp, new_cp, old_junit_torun, new_junit_torun, test_selection):
     if config.class_level_expansion:
         impact_set = refined_target_set | refined_expansion_set
     else:
@@ -585,7 +577,7 @@ def mixed_passes(go, prev_hash, post_hash, refined_expansion_set,
 #     os.sys_call("mvn clean test-compile")
     one_inv_pass(go, new_cp, new_junit_torun,
                  prev_hash + "_" + post_hash,
-                 impact_set, analysis_only=True)
+                 impact_set, test_selection, analysis_only=True)
     git.clear_temp_checkout(prev_hash)
     
     # checkout old commit, then checkout new src
@@ -596,7 +588,7 @@ def mixed_passes(go, prev_hash, post_hash, refined_expansion_set,
 #     os.sys_call("mvn clean test-compile")
     one_inv_pass(go, new_cp, old_junit_torun,
                  post_hash + "_" + prev_hash,
-                 impact_set, analysis_only=True)
+                 impact_set, test_selection, analysis_only=True)
     git.clear_temp_checkout(prev_hash)
 
 
@@ -726,18 +718,22 @@ def visit(junit_path, sys_classpath, agent_path, cust_mvn_repo, separate_go, pre
             old_changed_methods, new_changed_methods, old_method_info_map, new_method_info_map), \
         _merge_target_sets(
             old_changed_tests, new_changed_tests, old_method_info_map, new_method_info_map)
-    
+
+    if json_filepath != "":
+        test_selection = True
+    else:
+        test_selection = False
     '''
         3-rd pass: checkout prev_commit as detached head, and get invariants for all interesting targets
     '''    
     old_all_classes, old_expansion = one_inv_pass(go,
-        old_cp, old_junit_torun, prev_hash, refined_target_set)
+        old_cp, old_junit_torun, prev_hash, refined_target_set, test_selection)
     
     '''
         4-th pass: checkout post_commit as detached head, and get invariants for all interesting targets
     '''
     new_all_classes, new_expansion = one_inv_pass(go,
-        new_cp, new_junit_torun, post_hash, refined_target_set)
+        new_cp, new_junit_torun, post_hash, refined_target_set, test_selection)
     
     common_expansion = set()
     refined_expansion_set = set()
@@ -751,7 +747,7 @@ def visit(junit_path, sys_classpath, agent_path, cust_mvn_repo, separate_go, pre
     if iso:
         mixed_passes(go, prev_hash, post_hash, refined_expansion_set,
                      refined_target_set, old_refined_target_set, new_refined_target_set,
-                     old_cp, new_cp, old_junit_torun, new_junit_torun)
+                     old_cp, new_cp, old_junit_torun, new_junit_torun, test_selection)
     
     '''
         last pass: set common interests
