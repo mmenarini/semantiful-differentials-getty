@@ -56,7 +56,6 @@ def get_test_set_dyn(target_set, callee_of, junit_torun):
         if (not re.match(".*:((suite)|(setUp)|(tearDown))-(\d)*$", possible_test_mtd)):
             for one_test in all_test_classes:
                 if possible_test_mtd.startswith(one_test):
-                    print
                     test_set.add(possible_test_mtd)
     return test_set
 
