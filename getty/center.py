@@ -579,8 +579,7 @@ def one_inv_pass(go, cp, junit_torun, this_hash, refined_target_set, test_select
 
 
 def mixed_passes(go, prev_hash, post_hash, refined_expansion_set,
-                 refined_target_set, old_refined_target_set, new_refined_target_set,
-                 old_cp, new_cp, old_junit_torun, new_junit_torun, test_selection):
+                 refined_target_set, new_cp, old_junit_torun, new_junit_torun, test_selection):
     if config.class_level_expansion:
         impact_set = refined_target_set | refined_expansion_set
     else:
@@ -762,8 +761,7 @@ def visit(junit_path, sys_classpath, agent_path, cust_mvn_repo, separate_go, pre
     '''
     if iso:
         mixed_passes(go, prev_hash, post_hash, refined_expansion_set,
-                     refined_target_set, old_refined_target_set, new_refined_target_set,
-                     old_cp, new_cp, old_junit_torun, new_junit_torun, test_selection)
+                     refined_target_set, new_cp, old_junit_torun, new_junit_torun, test_selection)
     
     '''
         last pass: set common interests
