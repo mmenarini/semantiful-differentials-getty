@@ -313,8 +313,6 @@ def get_tests_and_target_set(go, json_filepath, junit_torun, this_hash):
     #get priority list from json file
     with open(json_filepath) as f:
         priorities = json.load(f)
-    print "********************* priorities: "
-    print priorities["priorityList"]
     test_set = set()
     target_set = set()
     methods_to_check = set()
