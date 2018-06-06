@@ -242,8 +242,8 @@ if __name__ == "__main__":
     should_further_recover = backup_and_stash_first()
     # clean up output directory
     remove_many_files(go, "_getty_*")
-    remove_file(go + "_types_to_methods_" + prev_hash  + "_.ex");
-    remove_file(go + "_types_to_methods_" + post_hash   + "_.ex");
+    remove_file(go + "_types_to_methods_*_.ex")
+
     '''
         multi-stage analysis: Villa (code) and Center (invariants) 
     '''
