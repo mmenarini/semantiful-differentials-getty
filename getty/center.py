@@ -98,6 +98,8 @@ def seq_get_invs(target_set_index_pair, java_cmd, junit_torun, go, this_hash, co
         for s in ttarget_set:
             if not s.__contains__(":"):
                 target_set.remove(s)
+    print "********************* target set: "
+    print target_set
 #     select_pattern = daikon.select_full(target_set)
     select_pattern = daikon.dfformat_full_ordered(target_set, test_selection)
     print "\n=== select pattern ===\n" + select_pattern + "\n"
