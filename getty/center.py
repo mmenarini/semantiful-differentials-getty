@@ -147,10 +147,8 @@ def seq_get_invs(target_set_index_pair, java_cmd, junit_torun, go, this_hash, co
         total_count = len(target_set)
 
     all_to_consider = set(target_set)
-    print "all_to_consider: ", all_to_consider
     if config.class_level_expansion:
         all_to_consider = (all_to_consider | expansion)
-    print "all_to_consider: ", all_to_consider
 
     classes_to_consider = set()
     for tgt in all_to_consider:
@@ -661,7 +659,6 @@ def mixed_passes(go, prev_hash, post_hash, refined_expansion_set,
     os.sys_call(" ".join(["git", "checkout", post_hash, new_test_path]))
 #     # may need to check whether it is compilable, return code?
 #     os.sys_call("mvn clean test-compile")
-    print "==== mixed_passes 1 ===="
     one_inv_pass(go, new_cp, new_junit_torun,
                  prev_hash + "_" + post_hash,
                  impact_set, test_selection, analysis_only=True)
@@ -674,7 +671,6 @@ def mixed_passes(go, prev_hash, post_hash, refined_expansion_set,
 #     # may need to check whether it is compilable, return code?
 #     os.sys_call("mvn clean test-compile")
 
-    print "==== mixed_passes 2 ===="
     one_inv_pass(go, new_cp, old_junit_torun,
                  post_hash + "_" + prev_hash,
                  impact_set, test_selection, analysis_only=True)
@@ -815,14 +811,12 @@ def visit(junit_path, sys_classpath, agent_path, cust_mvn_repo, separate_go, pre
     '''
         3-rd pass: checkout prev_commit as detached head, and get invariants for all interesting targets
     '''
-    print "=== visit 1 ==="
     old_all_classes, old_expansion = one_inv_pass(go,
         old_cp, old_junit_torun, prev_hash, refined_target_set, test_selection)
     
     '''
         4-th pass: checkout post_commit as detached head, and get invariants for all interesting targets
     '''
-    print "=== visit 2 ==="
     new_all_classes, new_expansion = one_inv_pass(go,
         new_cp, new_junit_torun, post_hash, refined_target_set, test_selection)
     
