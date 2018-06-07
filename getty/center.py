@@ -160,6 +160,11 @@ def seq_get_invs(target_set_index_pair, java_cmd, junit_torun, go, this_hash, co
         print "============ target is: " + tgt + ", pattern is: "+ daikon.dpformat_with_sigs(tgt) +" ==============="
         target_ff = daikon.fsformat_with_sigs(tgt)
         out_file = go+"_getty_inv__"+target_ff+"__"+this_hash+"_.inv.out"
+
+        if py_os.path.isfile(out_file):
+            # don't run daikon.PrintInvariants twice for the same class
+            continue
+
         run_printinv = \
             " ".join([java_cmd, "daikon.PrintInvariants",
                       "--format", config.output_inv_format,
