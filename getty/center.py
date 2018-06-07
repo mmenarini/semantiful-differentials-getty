@@ -7,6 +7,7 @@ import json
 from functools import partial
 from multiprocessing import Pool
 from os import path, makedirs
+import os as py_os
 
 import agency
 import config
@@ -144,18 +145,30 @@ def seq_get_invs(target_set_index_pair, java_cmd, junit_torun, go, this_hash, co
     if SHOW_DEBUG_INFO:
         current_count = 0
         total_count = len(target_set)
-    
+
     all_to_consider = set(target_set)
     if config.class_level_expansion:
         all_to_consider = (all_to_consider | expansion)
-    
+
+    classes_to_consider = set()
     for tgt in all_to_consider:
+        class_ref = tgt.split(':')[0]
+        classes_to_consider.add(class_ref)
+
+    print "==== classes to consider: ", classes_to_consider, " hash: " + this_hash
+    for tgt in classes_to_consider:
+        print "============ target is: " + tgt + ", pattern is: "+ daikon.dpformat_with_sigs(tgt) +" ==============="
         target_ff = daikon.fsformat_with_sigs(tgt)
         out_file = go+"_getty_inv__"+target_ff+"__"+this_hash+"_.inv.out"
+
+        if py_os.path.isfile(out_file):
+            # don't run daikon.PrintInvariants twice for the same class
+            continue
+
         run_printinv = \
             " ".join([java_cmd, "daikon.PrintInvariants",
                       "--format", config.output_inv_format,
-                      "--ppt-select-pattern=\'"+daikon.dpformat_with_sigs(tgt)+"\'",
+                      "--ppt-select-pattern=\'"+daikon.dpformat_with_sigs(tgt)[:-1]+"[.:]"+"\'",
                       "--output", out_file, inv_gz])
         if SHOW_DEBUG_INFO:
             current_count += 1
@@ -169,7 +182,68 @@ def seq_get_invs(target_set_index_pair, java_cmd, junit_torun, go, this_hash, co
             print "\n=== Daikon:PrintInvs command to run: \n" + run_printinv
         os.sys_call(run_printinv, ignore_bad_exit=True)
         sort_txt_inv(out_file)
+
+        result = create_inv_out_file_per_method(out_file, all_to_consider, this_hash, go)
+        if result is False:
+            print "create_inv_out_file_per_method returned False"
+
     os.remove_file(inv_gz)
+
+
+def create_inv_out_file_per_method(out_file, methods_to_consider, this_hash, go):
+    f = open(out_file, "r")
+
+    if f.mode != 'r':
+        print "WARN: file not opened in read mode"
+        return False
+
+    invariants = f.read()
+    f.close()
+
+    inv_array = invariants.split("\n================\n")
+
+    for tgt in methods_to_consider:
+        regex = daikon.dpformat_with_sigs(tgt)[1:]
+        target_ff = daikon.fsformat_with_sigs(tgt)
+        out_file = go + "_getty_inv__" + target_ff + "__" + this_hash + "_.inv.out"
+
+        # TODO: this is to prevent invariants being added to the same file multiple times. This shouldn't happen in the first place.
+        # I could figure out what is happening, but not exactly why and how to prevent it.
+        # It's happening because, for the GStack test project:
+        # For GStack, methods_to_consider will contain both isEmpty() and isEmpty()-56,56 so that's 2 times.
+        # For GStackTest, methods_to_consider will also contain GStack:isEmpty() and GStack:isEmpty()-56,56, that's another 2 times.
+        #    However, it will look for them in the GStackTests inv output file and of course cannot find anything there so it will print <NO INVARIANTS FOUND>
+        # So in total we look 4 times for invariants for GStack:isEmtpy and 2 times we find none because we're looking in the wrong inv file.
+        #    The first 2 times always find <NO INVARIANTS FOUND> and the last 2 times are duplicates
+        # Solution for now: only keep the output of the last time as this was the original behavior before my changes.
+        try:
+            py_os.remove(out_file)
+        except OSError:
+            pass
+
+        file_created = False
+        for inv in inv_array:
+            # if "\n"+tgt+":::" in inv:
+            if re.search(regex, inv):
+
+                print "=== writing: " + out_file
+                f = open(out_file, "a+")
+                file_created = True
+
+                f.write("\n================\n")
+                f.write(inv)
+                f.close()
+
+        if file_created is False:
+            f = open(out_file, "a+")
+            f.write("<NO INVARIANTS FOUND>\n")
+            f.close()
+
+        # f = open(out_file, "a+")
+        # f.write("tgt:\n"+ tgt+ "\nregex:\n"+ regex+ "\nout_file\n"+ out_file +"\n")
+        # f.close()
+
+    return True
 
 
 def get_expansion_set(go):
@@ -601,6 +675,7 @@ def mixed_passes(go, prev_hash, post_hash, refined_expansion_set,
     os.sys_call(" ".join(["git", "checkout", post_hash, new_src_path]))
 #     # may need to check whether it is compilable, return code?
 #     os.sys_call("mvn clean test-compile")
+
     one_inv_pass(go, new_cp, old_junit_torun,
                  post_hash + "_" + prev_hash,
                  impact_set, test_selection, analysis_only=True)
@@ -740,7 +815,7 @@ def visit(junit_path, sys_classpath, agent_path, cust_mvn_repo, separate_go, pre
         test_selection = False
     '''
         3-rd pass: checkout prev_commit as detached head, and get invariants for all interesting targets
-    '''    
+    '''
     old_all_classes, old_expansion = one_inv_pass(go,
         old_cp, old_junit_torun, prev_hash, refined_target_set, test_selection)
     
