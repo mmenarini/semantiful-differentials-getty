@@ -161,9 +161,17 @@ def seq_get_invs(target_set_index_pair, java_cmd, junit_torun, go, this_hash, co
         target_ff = daikon.fsformat_with_sigs(tgt)
         out_file = go+"_getty_inv__"+target_ff+"__"+this_hash+"_.inv.out"
 
-        if py_os.path.isfile(out_file):
-            # don't run daikon.PrintInvariants twice for the same class
-            continue
+        # TODO: For some reason adding this optimization leads to different results
+        # if py_os.path.isfile(out_file):
+        #     f = open(out_file, "r")
+        #     f_invs = f.read()
+        #     f.close()
+        #     if  f_invs == "<NO INVARIANTS INFERRED>\n":
+        #         print "no invariants found, running daikon.PrintInvariants again for class", tgt
+        #     else:
+        #         # don't run daikon.PrintInvariants twice for the same class
+        #         print "not running daikon.PrintInvariants again for class", tgt, f_invs
+        #         continue
 
         run_printinv = \
             " ".join([java_cmd, "daikon.PrintInvariants",
@@ -216,14 +224,20 @@ def create_inv_out_file_per_method(out_file, methods_to_consider, this_hash, go)
         # So in total we look 4 times for invariants for GStack:isEmtpy and 2 times we find none because we're looking in the wrong inv file.
         #    The first 2 times always find <NO INVARIANTS FOUND> and the last 2 times are duplicates
         # Solution for now: only keep the output of the last time as this was the original behavior before my changes.
-        try:
-            py_os.remove(out_file)
-        except OSError:
-            pass
+        file_invs = []
+        if py_os.path.isfile(out_file):
+            f = open(out_file, "r")
+            file_invs = f.read().split("\n================\n")
+            f.close()
+            if file_invs[0] == "<NO INVARIANTS INFERRED>\n":
+                py_os.remove(out_file)
+                file_invs = []
 
-        file_created = False
+        file_created = len(file_invs) > 0
         for inv in inv_array:
-            # if "\n"+tgt+":::" in inv:
+            if inv in file_invs:
+                continue
+
             if re.search(regex, inv):
 
                 print "=== writing: " + out_file
@@ -236,12 +250,8 @@ def create_inv_out_file_per_method(out_file, methods_to_consider, this_hash, go)
 
         if file_created is False:
             f = open(out_file, "a+")
-            f.write("<NO INVARIANTS FOUND>\n")
+            f.write("<NO INVARIANTS INFERRED>\n")
             f.close()
-
-        # f = open(out_file, "a+")
-        # f.write("tgt:\n"+ tgt+ "\nregex:\n"+ regex+ "\nout_file\n"+ out_file +"\n")
-        # f.close()
 
     return True
 
@@ -396,68 +406,29 @@ def get_tests_and_target_set(go, json_filepath, junit_torun, this_hash):
     target_set = set()
     methods_to_check = set()
     for priority in priorities["priorityList"]:
-        s = priority + "("
-        method = ""
-        #check to see if method is eventually called by a test
-        for m in methods_to_tests:
-            if m[:len(s)] == s:
-                method = m
-                break
-        #if eventually called by a test then add to target set
-        #add tests that call it to test set
-        if method:
-            methodNumber = method[(method.rfind("-")):]
-            target_set.add(priority + methodNumber)
-            for test in methods_to_tests[method]:
-                test_set.add(test)
-            #methods to check are for checking if there are called methods within target
-            methods_to_check.add(method)
-        #else it must be a method that belongs to a type. Get methods that implement it
-        #or are in a subclass of it
-        else:
-            index = priority.find(":")
-            type = priority[:index]
-            method_name = priority[index:]
-            method_name = method_name.strip()
-            #check to see if type is a valid type
-            if type in types_to_methods:
-                #for each method in the type get corresponding subtype method
-                for m in types_to_methods[type]:
-                    m = m.strip()
-                    i = m.rfind(":")
-                    if m[i:] == method_name:
-                        for key in methods_to_tests:
-                            #add corresponding subtype method to target set and
-                            #tests that call it to test set
-                            if key[:len(m)] == m:
-                                methodNumber = key[(key.rfind("-")):]
-                                target_set.add(m + methodNumber)
-                                for test in methods_to_tests[key]:
-                                    test_set.add(test)
-                                methods_to_check.add(key)
-        seen_methods = set([])
-        #(methods_to_check = target set 1st iteration)
-        #for each method in target set check if it calls another method
-        #if so add that method to methods to check and target set
-        #run until no more methods to check or all methods have been seen
-        while methods_to_check:
-            to_check = set(methods_to_check)
-            for m in to_check:
-                if not m in seen_methods:
-                    seen_methods.add(m)
-                    if m in nontest_method_calls.keys():
-                        for callee in nontest_method_calls[m]:
-                            methods_to_check.add(callee)
-                            if callee in methods_to_tests:
-                                index = callee.find(":")
-                                type = callee[:index]
-                                for method in types_to_methods[type]:
-                                    method_name = method[:(method.find("("))]
-                                    line_number = method[(method.rfind("-")):]
-                                    target_set.add(method_name + line_number)
-                                for test in methods_to_tests[callee]:
-                                    test_set.add(test)
-                methods_to_check.remove(m)
+        print "prioririty " + priority
+        target_set, test_set, methods_to_check = add_to_targetset(methods_to_check, methods_to_tests, priority, target_set, test_set, types_to_methods)
+    seen_methods = set([])
+    #(methods_to_check = target set 1st iteration)
+    #for each method in target set check if it calls another method
+    #if so add that method to methods to check and target set
+    #run until no more methods to check or all methods have been seen
+    while methods_to_check:
+        to_check = set(methods_to_check)
+        for m in to_check:
+            if not m in seen_methods:
+                seen_methods.add(m)
+                if m in nontest_method_calls.keys():
+                    for callee in nontest_method_calls[m]:
+                        methods_to_check.add(callee)
+                        callee_name = callee[:(callee.rfind("("))]
+                        target_set, test_set, methods_to_check = add_to_targetset(methods_to_check, methods_to_tests,
+                                                                                  callee_name,target_set, test_set,
+                                                                                      types_to_methods)
+
+            methods_to_check.remove(m)
+    print "target setttt"
+    print target_set
     #add each corresponding junit suite to junit to run
     tests_for_junit = set()
     for test in test_set:
@@ -468,6 +439,52 @@ def get_tests_and_target_set(go, json_filepath, junit_torun, this_hash):
         junit_to_run = junit_to_run + " " + temp
     junit_torun = junit_to_run
     return junit_torun, target_set, test_set
+
+
+def add_to_targetset(methods_to_check, methods_to_tests, target, target_set, test_set, types_to_methods):
+    s = target + "("
+    method = ""
+    # check to see if method is eventually called by a test
+    for m in methods_to_tests:
+        if m[:len(s)] == s:
+            method = m
+            break
+    # if eventually called by a test then add to target set
+    # add tests that call it to test set
+    if method:
+        methodNumber = method[(method.rfind("-")):]
+        target_set.add(target + methodNumber)
+        for test in methods_to_tests[method]:
+            test_set.add(test)
+            # methodNumber = test[(test.rfind("-")):]
+            # target_set.add(target + methodNumber)
+            # methods_to_check.add(test)
+        # methods to check are for checking if there are called methods within target
+        methods_to_check.add(method)
+    # else it must be a method that belongs to a type. Get methods that implement it
+    # or are in a subclass of it
+    else:
+        index = target.find(":")
+        type = target[:index]
+        method_name = target[index:]
+        method_name = method_name.strip()
+        # check to see if type is a valid type
+        if type in types_to_methods:
+            # for each method in the type get corresponding subtype method
+            for m in types_to_methods[type]:
+                m = m.strip()
+                i = m.rfind(":")
+                if m[i:] == method_name:
+                    for key in methods_to_tests:
+                        # add corresponding subtype method to target set and
+                        # tests that call it to test set
+                        if key[:len(m)] == m:
+                            methodNumber = key[(key.rfind("-")):]
+                            target_set.add(m + methodNumber)
+                            for test in methods_to_tests[key]:
+                                test_set.add(test)
+                            methods_to_check.add(key)
+    return target_set, test_set, methods_to_check
 
 
 def read_in_types_to_methods(go, this_hash):
