@@ -406,12 +406,10 @@ def get_tests_and_target_set(go, json_filepath, junit_torun, this_hash):
                 if m in nontest_method_calls.keys():
                     for callee in nontest_method_calls[m]:
                         methods_to_check.add(callee)
-                        callee = callee[:(callee.rfind("("))]
+                        callee_name = callee[:(callee.rfind("("))]
                         target_set, test_set, methods_to_check = add_to_targetset(methods_to_check, methods_to_tests,
-                                                                                  callee,target_set, test_set,
+                                                                                  callee_name,target_set, test_set,
                                                                                       types_to_methods)
-                        for test in methods_to_tests[callee]:
-                            test_set.add(test)
 
             methods_to_check.remove(m)
     print "target setttt"
@@ -429,19 +427,16 @@ def get_tests_and_target_set(go, json_filepath, junit_torun, this_hash):
 
 
 def add_to_targetset(methods_to_check, methods_to_tests, target, target_set, test_set, types_to_methods):
-    print "targgettttt " + target
     s = target + "("
     method = ""
     # check to see if method is eventually called by a test
     for m in methods_to_tests:
-        print "m[len(s)] [" + m[:len(s)] + "] s= ["+s+"]"
         if m[:len(s)] == s:
             method = m
             break
     # if eventually called by a test then add to target set
     # add tests that call it to test set
     if method:
-        print "methooodddd " + method
         methodNumber = method[(method.rfind("-")):]
         target_set.add(target + methodNumber)
         for test in methods_to_tests[method]:
@@ -458,7 +453,6 @@ def add_to_targetset(methods_to_check, methods_to_tests, target, target_set, tes
         type = target[:index]
         method_name = target[index:]
         method_name = method_name.strip()
-        print "method nammeeee " + method_name
         # check to see if type is a valid type
         if type in types_to_methods:
             # for each method in the type get corresponding subtype method
