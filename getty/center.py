@@ -161,9 +161,17 @@ def seq_get_invs(target_set_index_pair, java_cmd, junit_torun, go, this_hash, co
         target_ff = daikon.fsformat_with_sigs(tgt)
         out_file = go+"_getty_inv__"+target_ff+"__"+this_hash+"_.inv.out"
 
-        if py_os.path.isfile(out_file):
-            # don't run daikon.PrintInvariants twice for the same class
-            continue
+        # TODO: For some reason adding this optimization leads to different results
+        # if py_os.path.isfile(out_file):
+        #     f = open(out_file, "r")
+        #     f_invs = f.read()
+        #     f.close()
+        #     if  f_invs == "<NO INVARIANTS INFERRED>\n":
+        #         print "no invariants found, running daikon.PrintInvariants again for class", tgt
+        #     else:
+        #         # don't run daikon.PrintInvariants twice for the same class
+        #         print "not running daikon.PrintInvariants again for class", tgt, f_invs
+        #         continue
 
         run_printinv = \
             " ".join([java_cmd, "daikon.PrintInvariants",
@@ -216,14 +224,20 @@ def create_inv_out_file_per_method(out_file, methods_to_consider, this_hash, go)
         # So in total we look 4 times for invariants for GStack:isEmtpy and 2 times we find none because we're looking in the wrong inv file.
         #    The first 2 times always find <NO INVARIANTS FOUND> and the last 2 times are duplicates
         # Solution for now: only keep the output of the last time as this was the original behavior before my changes.
-        try:
-            py_os.remove(out_file)
-        except OSError:
-            pass
+        file_invs = []
+        if py_os.path.isfile(out_file):
+            f = open(out_file, "r")
+            file_invs = f.read().split("\n================\n")
+            f.close()
+            if file_invs[0] == "<NO INVARIANTS INFERRED>\n":
+                py_os.remove(out_file)
+                file_invs = []
 
-        file_created = False
+        file_created = len(file_invs) > 0
         for inv in inv_array:
-            # if "\n"+tgt+":::" in inv:
+            if inv in file_invs:
+                continue
+
             if re.search(regex, inv):
 
                 print "=== writing: " + out_file
@@ -236,12 +250,8 @@ def create_inv_out_file_per_method(out_file, methods_to_consider, this_hash, go)
 
         if file_created is False:
             f = open(out_file, "a+")
-            f.write("<NO INVARIANTS FOUND>\n")
+            f.write("<NO INVARIANTS INFERRED>\n")
             f.close()
-
-        # f = open(out_file, "a+")
-        # f.write("tgt:\n"+ tgt+ "\nregex:\n"+ regex+ "\nout_file\n"+ out_file +"\n")
-        # f.close()
 
     return True
 
