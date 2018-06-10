@@ -11,7 +11,7 @@ import os as py_os
 
 import agency
 import config
-from tools import daikon, ex, git, html, os, profiler, mavenCalls
+from tools import daikon, ex, git, html, os, profiler, maven_adapter
 
 
 SHOW_DEBUG_INFO = config.show_debug_info
@@ -281,32 +281,26 @@ def one_info_pass(
     # os.sys_call("git checkout " + this_hash)
     # os.sys_call("mvn clean")
 
-    bin_path = mavenCalls.get_bin_path(this_hash)
-    test_bin_path = mavenCalls.get_test_bin_path(this_hash)
-    cp = mavenCalls.get_full_class_path(this_hash, junit_path, sys_classpath, bin_path, test_bin_path)
+    bin_path = maven_adapter.get_bin_path(this_hash)
+    test_bin_path = maven_adapter.get_test_bin_path(this_hash)
+    cp = maven_adapter.get_full_class_path(this_hash, junit_path, sys_classpath, bin_path, test_bin_path)
     if SHOW_DEBUG_INFO:
         print "\n===full classpath===\n" + cp + "\n"
 
     print "\ncopying all code to specific directory ...\n"
-    start = time.time()
-    all_code_dirs = [mavenCalls.get_source_directory(this_hash),
-                     mavenCalls.get_test_source_directory(this_hash)]
-    print "get all code dirs " + str(time.time() - start)
+    all_code_dirs = [maven_adapter.get_source_directory(this_hash),
+                     maven_adapter.get_test_source_directory(this_hash)]
     getty_code_store = go + '_getty_allcode_' + this_hash + '_/'
     print 'copy to ' + getty_code_store + '\n'
     makedirs(getty_code_store)
-    start = time.time()
     for adir in all_code_dirs:
         os.sys_call(" ".join(["cp -r", adir + "/*", getty_code_store]), ignore_bad_exit=True)
-    print "copying code " + str(time.time() - start)
-    start = time.time()
     if config.use_special_junit_for_dyn:
         info_junit_path = os.rreplace(junit_path, config.default_junit_version, config.special_junit_version, 1)
         # infocp = mvn.full_classpath(info_junit_path, sys_classpath, bin_path, test_bin_path)
-        infocp = mavenCalls.get_full_class_path(this_hash,info_junit_path, sys_classpath, bin_path, test_bin_path)
+        infocp = maven_adapter.get_full_class_path(this_hash, info_junit_path, sys_classpath, bin_path, test_bin_path)
     else:
         infocp = cp
-    print "get info cp " + str(time.time() - start)
     java_cmd = " ".join(["java", "-cp", infocp,
                          #                         "-Xms"+config.min_heap,
                          "-Xmx"+config.max_heap,
@@ -316,9 +310,9 @@ def one_info_pass(
                          ])
 
     # os.sys_call("mvn test -DskipTests", ignore_bad_exit=True)
-    mavenCalls.compile_tests(this_hash)
+    maven_adapter.compile_tests(this_hash)
 
-    junit_torun = mavenCalls.get_Junit_torun(cust_mvn_repo, this_hash)
+    junit_torun = maven_adapter.get_junit_torun(cust_mvn_repo, this_hash)
     if SHOW_DEBUG_INFO:
         print "\n===junit torun===\n" + junit_torun + "\n"
 
@@ -555,7 +549,7 @@ def one_inv_pass(go, cp, junit_torun, this_hash, refined_target_set, test_select
     if not analysis_only:
         os.sys_call("git checkout " + this_hash)
 
-    # mavenCalls.maven_clean()
+    # maven_adapter.maven_clean()
 
     if SHOW_DEBUG_INFO:
         print "\n===full classpath===\n" + cp + "\n"
@@ -569,7 +563,7 @@ def one_inv_pass(go, cp, junit_torun, this_hash, refined_target_set, test_select
                          ])
 
     # os.sys_call("mvn test -DskipTests", ignore_bad_exit=True)
-    mavenCalls.compile_tests(this_hash)
+    maven_adapter.compile_tests(this_hash)
 
     if SHOW_DEBUG_INFO:
         print "\n===junit torun===\n" + junit_torun + "\n"
@@ -657,7 +651,7 @@ def one_inv_pass(go, cp, junit_torun, this_hash, refined_target_set, test_select
     # include coverage report for compare
     if config.analyze_test_coverage and not analysis_only:
         try:
-            mavenCalls.generate_test_report(go, this_hash)
+            maven_adapter.generate_test_report(go, this_hash)
         except:
             pass
 
@@ -682,7 +676,7 @@ def mixed_passes(go, prev_hash, post_hash, refined_expansion_set,
         impact_set = refined_target_set
     # checkout old commit, then checkout new tests
     os.sys_call("git checkout " + prev_hash)
-    new_test_path = mavenCalls.get_test_source_directory(prev_hash)
+    new_test_path = maven_adapter.get_test_source_directory(prev_hash)
     os.sys_call(" ".join(["git", "checkout", post_hash, new_test_path]))
 #     # may need to check whether it is compilable, return code?
 #     os.sys_call("mvn clean test-compile")
@@ -693,7 +687,7 @@ def mixed_passes(go, prev_hash, post_hash, refined_expansion_set,
     
     # checkout old commit, then checkout new src
     os.sys_call("git checkout " + prev_hash)
-    new_src_path = mavenCalls.get_source_directory(prev_hash)
+    new_src_path = maven_adapter.get_source_directory(prev_hash)
     os.sys_call(" ".join(["git", "checkout", post_hash, new_src_path]))
 #     # may need to check whether it is compilable, return code?
 #     os.sys_call("mvn clean test-compile")
