@@ -11,7 +11,7 @@ import os as py_os
 
 import agency
 import config
-from tools import daikon, ex, git, html, mvn, os, profiler, mavenCalls
+from tools import daikon, ex, git, html, os, profiler, mavenCalls
 
 
 SHOW_DEBUG_INFO = config.show_debug_info
@@ -316,9 +316,9 @@ def one_info_pass(
                          ])
 
     # os.sys_call("mvn test -DskipTests", ignore_bad_exit=True)
-    os.sys_call("mvn test-compile")
+    mavenCalls.compile_tests(this_hash)
 
-    junit_torun = mvn.junit_torun_str(cust_mvn_repo)
+    junit_torun = mavenCalls.get_Junit_torun(cust_mvn_repo, this_hash)
     if SHOW_DEBUG_INFO:
         print "\n===junit torun===\n" + junit_torun + "\n"
 
@@ -555,7 +555,7 @@ def one_inv_pass(go, cp, junit_torun, this_hash, refined_target_set, test_select
     if not analysis_only:
         os.sys_call("git checkout " + this_hash)
 
-    os.sys_call("mvn clean")
+    # mavenCalls.maven_clean()
 
     if SHOW_DEBUG_INFO:
         print "\n===full classpath===\n" + cp + "\n"
@@ -569,7 +569,7 @@ def one_inv_pass(go, cp, junit_torun, this_hash, refined_target_set, test_select
                          ])
 
     # os.sys_call("mvn test -DskipTests", ignore_bad_exit=True)
-    os.sys_call("mvn test-compile")
+    mavenCalls.compile_tests(this_hash)
 
     if SHOW_DEBUG_INFO:
         print "\n===junit torun===\n" + junit_torun + "\n"
@@ -657,7 +657,7 @@ def one_inv_pass(go, cp, junit_torun, this_hash, refined_target_set, test_select
     # include coverage report for compare
     if config.analyze_test_coverage and not analysis_only:
         try:
-            mvn.generate_coverage_report(go, this_hash)
+            mavenCalls.generate_test_report(go, this_hash)
         except:
             pass
 

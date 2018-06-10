@@ -20,7 +20,8 @@ def checkout_build(proj_dir, commit_hash):
     else:
         raise ValueError("proj_dir is not a prefix of test src path")
     print "current test src path (relative): " + test_src_rel_path + "\n"
-    os.sys_call("mvn test-compile")
+
+    mavenCalls.compile_tests(commit_hash)
     return bin_path, src_rel_path, test_src_rel_path
 
 
