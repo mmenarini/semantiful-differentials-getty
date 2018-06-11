@@ -11,7 +11,7 @@ import os as py_os
 
 import agency
 import config
-from tools import daikon, ex, git, html, os, profiler, maven_adapter
+from tools import java, daikon, ex, git, html, os, profiler, maven_adapter
 
 
 SHOW_DEBUG_INFO = config.show_debug_info
@@ -301,13 +301,6 @@ def one_info_pass(
         infocp = maven_adapter.get_full_class_path(this_hash, info_junit_path, sys_classpath, bin_path, test_bin_path)
     else:
         infocp = cp
-    java_cmd = " ".join(["java", "-cp", infocp,
-                         #                         "-Xms"+config.min_heap,
-                         "-Xmx"+config.max_heap,
-                         "-XX:+UseConcMarkSweepGC",
-                         #                          "-XX:-UseGCOverheadLimit",
-                         #"-XX:-UseSplitVerifier",  # FIXME: JDK 8- only!
-                         ])
 
     # os.sys_call("mvn test -DskipTests", ignore_bad_exit=True)
     maven_adapter.compile_tests(this_hash)
@@ -330,22 +323,12 @@ def one_info_pass(
     instrument_regex = "|".join(prefix_regexes)
     if SHOW_DEBUG_INFO:
         print "\n===instrumentation pattern===\n" + instrument_regex + "\n"
-    # run tests with instrumentation
-    run_instrumented_tests = \
-        " ".join([java_cmd, "-ea",
-                  "-javaagent:" + agent_path + "=\"" + instrument_regex + "\"",
-                  junit_torun])
-    if SHOW_DEBUG_INFO:
-        print "\n=== Instrumented testing command to run: \n" + run_instrumented_tests
 
     if not path.exists(dyng_go):
         makedirs(dyng_go)
 
-    full_info_exfile = go + "_getty_binary_info_" + this_hash + "_.ex"
-    os.sys_call(run_instrumented_tests +
-                " > " + full_info_exfile +
-                ("" if config.show_stack_trace_info else " 2> /dev/null"),
-                ignore_bad_exit=True)
+    full_info_exfile = java.run_instrumented_tests(this_hash, go, infocp, agent_path, instrument_regex, junit_torun)
+
     full_method_info_map = {}
     ext_start_index = len(config.method_info_line_prefix)
     with open(full_info_exfile, 'r') as f:
