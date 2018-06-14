@@ -11,6 +11,7 @@ import center
 import config
 import gallery
 import villa
+from tools.project_utils import ProjectUtils
 from tools import profiler
 from analysis.inspector import getty_csi_init, getty_csi_targets_prep
 from tools.hdiff import diff_to_html, getty_append_semainfo
@@ -234,6 +235,8 @@ if __name__ == "__main__":
         else:
             os.makedirs(go)
     separate_go = (dyng_go, go)
+
+    ProjectUtils.init(proj_dir, go)
     
     '''
         0-th: backup current branch work in stash for the last pass to restore

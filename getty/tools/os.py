@@ -4,8 +4,9 @@ import subprocess
 import sys
 
 
-def sys_call(cmd, ignore_bad_exit=False):
-    ret = subprocess.call(cmd, shell=True)
+def sys_call(cmd, ignore_bad_exit=False, cwd=None):
+    print "\n=== sys_call ===\n cmd =", cmd, "\n cwd =",cwd,"\n"
+    ret = subprocess.call(cmd, shell=True, cwd=cwd)
     if ret != 0:
         print "\n-- << non-zero exit status code >> --"
         if ignore_bad_exit:
@@ -17,6 +18,7 @@ def sys_call(cmd, ignore_bad_exit=False):
 
 
 def from_sys_call(cmd):
+    print "running command:", cmd
     return subprocess.check_output(cmd, shell=True)
 
 

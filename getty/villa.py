@@ -1,27 +1,34 @@
-from os import chdir
+import json
+from os import chdir, path, makedirs
 
 import config
 from tools import ex, git, os, maven_adapter
 
 
-def checkout_build(proj_dir, commit_hash):
+def checkout_build(commit_hash):
     # os.sys_call("git checkout " + commit_hash)
     # os.sys_call("mvn clean")
+
+    # TODO: change maven adapter to checkout_build_output_dir path
     bin_path = maven_adapter.get_bin_path(commit_hash)
     src_rel_path = maven_adapter.get_source_directory(commit_hash)
-    if src_rel_path.startswith(proj_dir):
-        src_rel_path = src_rel_path[len(proj_dir):]
-    else:
-        raise ValueError("proj_dir is not a prefix of src path")
-    print "current src path (relative): " + src_rel_path + "\n"
     test_src_rel_path = maven_adapter.get_test_source_directory(commit_hash)
-    if test_src_rel_path.startswith(proj_dir):
-        test_src_rel_path = test_src_rel_path[len(proj_dir):]
-    else:
-        raise ValueError("proj_dir is not a prefix of test src path")
+
+    # if src_rel_path.startswith(proj_dir):
+    #     src_rel_path = src_rel_path[len(proj_dir):]
+    # else:
+    #     raise ValueError("proj_dir is not a prefix of src path")
+    print "current src path (relative): " + src_rel_path + "\n"
+    # if test_src_rel_path.startswith(proj_dir):
+    #     test_src_rel_path = test_src_rel_path[len(proj_dir):]
+    # else:
+    #     raise ValueError("proj_dir is not a prefix of test src path")
     print "current test src path (relative): " + test_src_rel_path + "\n"
 
     maven_adapter.compile_tests(commit_hash)
+
+    # TODO copy to go/commit_hash
+
     return bin_path, src_rel_path, test_src_rel_path
 
 
@@ -41,7 +48,7 @@ def visit(villa_path, pwd, proj_dir, go, prev_hash, post_hash, pkg_prefix="-"):
         1-st pass: checkout prev_commit as detached head, and get all sets and etc, in simple (bare) mode (-s)
             remember to clear after this pass
     '''
-    bin_path, src_rel_path, test_src_rel_path = checkout_build(proj_dir, prev_hash)
+    bin_path, src_rel_path, test_src_rel_path = checkout_build(prev_hash)
     run_villa = "java -jar {0} -s {1} {2} {3} {4} {5} {6} -o {7}".format(
         villa_path, diff_out, bin_path, test_src_rel_path, pkg_prefix, prev_hash, post_hash, go)
     run_villa_l4ms = "java -jar {0} -l {1} {2} {3} -o {4}".format(
@@ -70,7 +77,7 @@ def visit(villa_path, pwd, proj_dir, go, prev_hash, post_hash, pkg_prefix="-"):
         2-nd pass: checkout post_commit as detached head, and get all sets and etc, in complex mode (-c)
             remember to clear after this pass
     '''
-    bin_path, src_rel_path, test_src_rel_path = checkout_build(proj_dir, post_hash)
+    bin_path, src_rel_path, test_src_rel_path = checkout_build(post_hash)
     
     run_villa = "java -jar {0} -c {1} {2} {3} {4} {5} {6} -o {7}".format(
         villa_path, diff_out, bin_path, test_src_rel_path, pkg_prefix, prev_hash, post_hash, go)
@@ -113,7 +120,7 @@ def visit(villa_path, pwd, proj_dir, go, prev_hash, post_hash, pkg_prefix="-"):
         3-rd pass: checkout prev_commit as detached head, and get all sets and etc, in recovery mode (-r)
             remember to clear after this pass
     '''
-    bin_path, src_rel_path, test_src_rel_path = checkout_build(proj_dir, prev_hash)
+    bin_path, src_rel_path, test_src_rel_path = checkout_build(prev_hash)
     
     run_villa = "java -jar {0} -r {1} {2} {3} {4} {5} {6} -o {7}".format(
         villa_path, diff_out, bin_path, test_src_rel_path, pkg_prefix, prev_hash, post_hash, go)

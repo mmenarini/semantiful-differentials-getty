@@ -340,6 +340,8 @@ def one_info_pass(
                 k, v = rawdata.split(" : ")
                 full_method_info_map[k.strip()] = v.strip()
 
+    print "dyng_go=", dyng_go, " go=", go
+
     os.merge_dyn_files(dyng_go, go, "_getty_dyncg_-hash-_.ex", this_hash)
     os.merge_dyn_files(dyng_go, go, "_getty_dynfg_-hash-_.ex", this_hash)
     caller_of, callee_of = agency.caller_callee(go, this_hash)
