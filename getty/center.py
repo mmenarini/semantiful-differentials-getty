@@ -401,8 +401,19 @@ def get_tests_and_target_set(go, json_filepath, junit_torun, this_hash):
     target_set = set()
     methods_to_check = set()
     for priority in priorities["priorityList"]:
-        print "prioririty " + priority
-        target_set, test_set, methods_to_check = add_to_targetset(methods_to_check, methods_to_tests, priority, target_set, test_set, types_to_methods)
+        package = priority.split(":")
+        # check if package name is a test suite. if so then it is a test.
+        testSuites = junit_torun.split(" ")
+        if package[0] in testSuites:
+            priority = priority + "("
+            for method in methods_to_tests.keys():
+                for test in methods_to_tests[method]:
+                    if priority == test[:len(priority)]:
+                        method = method[:method.find("(")]
+                        target_set, test_set, methods_to_check = add_to_targetset(methods_to_check, methods_to_tests, method, target_set, test_set, types_to_methods)
+        # else priority is not a test
+        else:
+            target_set, test_set, methods_to_check = add_to_targetset(methods_to_check, methods_to_tests, priority, target_set, test_set, types_to_methods)
     seen_methods = set([])
     #(methods_to_check = target set 1st iteration)
     #for each method in target set check if it calls another method
@@ -444,6 +455,7 @@ def add_to_targetset(methods_to_check, methods_to_tests, target, target_set, tes
         if m[:len(s)] == s:
             method = m
             break
+
     # if eventually called by a test then add to target set
     # add tests that call it to test set
     if method:
