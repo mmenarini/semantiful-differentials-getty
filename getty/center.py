@@ -11,6 +11,7 @@ import os as py_os
 
 import agency
 import config
+from tools.project_utils import ProjectUtils
 from tools import java, daikon, ex, git, html, os, profiler, maven_adapter
 
 
@@ -61,7 +62,7 @@ def sort_txt_inv(out_file):
 def all_methods_expansion(candidates, go, this_hash, index, java_cmd, inv_gz):
     exp_tmp = go + "expansion_temp." + this_hash + "." + str(index) + ".allinvs"
     run_print_allinvs = " ".join([java_cmd, "daikon.PrintInvariants", "--output", exp_tmp, inv_gz])
-    os.sys_call(run_print_allinvs, ignore_bad_exit=True)
+    os.sys_call(run_print_allinvs, ignore_bad_exit=True, cwd=ProjectUtils.get_version_path(this_hash))
     regex_header = "(.*):::(ENTER|EXIT|CLASS|OBJECT|THROW).*"
     with open(exp_tmp, 'r') as rf:
         alllines = rf.read().split("\n")
@@ -133,7 +134,7 @@ def seq_get_invs(target_set_index_pair, java_cmd, junit_torun, go, this_hash, co
                   junit_torun])
     if SHOW_DEBUG_INFO:
         print "\n=== Daikon:Chicory+Daikon(online) command to run: \n" + run_chicory_daikon
-    os.sys_call(run_chicory_daikon, ignore_bad_exit=True)
+    os.sys_call(run_chicory_daikon, ignore_bad_exit=True, cwd=ProjectUtils.get_version_path(this_hash))
     
     expansion = set()
     if consider_expansion and config.class_level_expansion:
@@ -188,7 +189,7 @@ def seq_get_invs(target_set_index_pair, java_cmd, junit_torun, go, this_hash, co
                               bar_length=50)
         elif SHOW_MORE_DEBUG_INFO:
             print "\n=== Daikon:PrintInvs command to run: \n" + run_printinv
-        os.sys_call(run_printinv, ignore_bad_exit=True)
+        os.sys_call(run_printinv, ignore_bad_exit=True, cwd=ProjectUtils.get_version_path(this_hash))
         sort_txt_inv(out_file)
 
         result = create_inv_out_file_per_method(out_file, all_to_consider, this_hash, go)
@@ -240,7 +241,7 @@ def create_inv_out_file_per_method(out_file, methods_to_consider, this_hash, go)
 
             if re.search(regex, inv):
 
-                print "=== writing: " + out_file
+                # print "=== writing: " + out_file
                 f = open(out_file, "a+")
                 file_created = True
 

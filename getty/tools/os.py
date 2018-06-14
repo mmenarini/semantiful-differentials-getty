@@ -2,10 +2,12 @@
 
 import subprocess
 import sys
+import config
 
 
 def sys_call(cmd, ignore_bad_exit=False, cwd=None):
-    print "\n=== sys_call ===\n cmd =", cmd, "\n cwd =",cwd,"\n"
+    if config.show_stack_trace_info:
+        print "\n=== sys_call ===\n cmd =", cmd, "\n cwd =",cwd,"\n"
     ret = subprocess.call(cmd, shell=True, cwd=cwd)
     if ret != 0:
         print "\n-- << non-zero exit status code >> --"
