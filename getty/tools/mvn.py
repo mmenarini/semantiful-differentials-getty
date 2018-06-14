@@ -3,16 +3,18 @@
 import re, subprocess
 
 import config
-from tools.os import sys_call, from_sys_call_enforce
-
+from os import sys_call, from_sys_call_enforce
 
 # FIXME: support multi-module project
-def path_from_mvn_call(env):
-    if env not in ["sourceDirectory", "scriptSourceDirectory", "testSourceDirectory", 
+from project_utils import ProjectUtils
+
+
+def path_from_mvn_call(env, cwd=None):
+    if env not in ["sourceDirectory", "scriptSourceDirectory", "testSourceDirectory",
                    "outputDirectory", "testOutputDirectory", "directory"]:
         raise ValueError("incorrect env var: " + env)
     mvn_cmd = "mvn help:evaluate -Dexpression=project.build." + env + " | grep ^/"
-    return subprocess.check_output(mvn_cmd, shell=True).strip()
+    return subprocess.check_output(mvn_cmd, shell=True, cwd=cwd).strip()
 
 
 # IMPROVE: supported multi-module project, but make it module-specific when needed
@@ -59,8 +61,8 @@ def junit_torun_str(cust_mvn_repo):
         if config.effortless_mvn_setup:
             local_repo = "-Dmaven.repo.local=" + cust_mvn_repo
         mvn_cmd = "mvn " + local_repo + \
-            " org.apache.maven.plugins:maven-surefire-plugin:2.19.2-SNAPSHOT:test" + \
-            " | " + "grep __for__getty__\ __junit"
+                  " org.apache.maven.plugins:maven-surefire-plugin:2.19.2-SNAPSHOT:test" + \
+                  " | " + "grep __for__getty__\ __junit"
         output_raw = subprocess.check_output(mvn_cmd, shell=True).strip()
         start_index = output_raw.index("__for__getty__ __junit")
         if start_index == -1:
@@ -103,4 +105,13 @@ def generate_coverage_report(go, curr_hash):
     sys_call("mvn emma:emma", ignore_bad_exit=True)
     emma_dir = path_from_mvn_call("directory") + "/site/emma"
     target_dir = go + "_getty_emma_" + curr_hash + "_"
-    sys_call(" ".join(["mv", emma_dir, target_dir]), ignore_bad_exit=True)
+    sys_call(" ".join(["mv", emma_dir, target_dir]), ignore_bad_exit=True, cwd=ProjectUtils.get_version_path(curr_hash))
+
+
+def clean(path):
+    print "tpaath = ", path
+    sys_call("mvn clean", cwd=path)
+
+
+def test_compile(path):
+    sys_call("mvn test-compile", cwd=path)

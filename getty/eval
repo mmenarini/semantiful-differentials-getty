@@ -97,7 +97,7 @@ def config_env():
     this_script_dir = this_script_path[:this_script_path.rfind("/")+1]
     villa_path = this_script_dir + "lib/villa-2.0.jar"  # jar is at the same dir
     junit_path = this_script_dir + "lib/junit-" + config.default_junit_version + ".jar"  # jar (junit) is at the same dir
-    agent_path = this_script_dir + "lib/jdyncg-0.5-getty-dycg-agent.jar"  # jar is at the same dir
+    agent_path = this_script_dir + "lib/jdyncg-0.6-getty-dycg-agent.jar"  # jar is at the same dir
     if os.path.exists(villa_path) and os.path.exists(junit_path) and os.path.exists(agent_path):
         pass
     elif not os.path.exists(villa_path):
