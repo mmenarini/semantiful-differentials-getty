@@ -3,6 +3,7 @@
 import os
 import re
 import sys
+import time
 from inspect import getsourcefile
 
 import agency
@@ -10,6 +11,7 @@ import center
 import config
 import gallery
 import villa
+from tools.project_utils import ProjectUtils
 from tools import profiler
 from analysis.inspector import getty_csi_init, getty_csi_targets_prep
 from tools.hdiff import diff_to_html, getty_append_semainfo
@@ -50,7 +52,7 @@ def config_env():
     this_script_dir = this_script_path[:this_script_path.rfind("/")+1]
     villa_path = this_script_dir + "lib/villa-2.0.jar"  # jar is at the same dir
     junit_path = this_script_dir + "lib/junit-" + config.default_junit_version + ".jar"  # jar (junit) is at the same dir
-    agent_path = this_script_dir + "lib/jdyncg-0.5-getty-dycg-agent.jar"  # jar is at the same dir
+    agent_path = this_script_dir + "lib/jdyncg-0.6-getty-dycg-agent.jar"  # jar is at the same dir
     if os.path.exists(villa_path) and os.path.exists(junit_path) and os.path.exists(agent_path):
         print "\nvilla-x.x.jar path: " + villa_path
         print "\njunit-x-getty.jar path: " + junit_path
@@ -217,7 +219,6 @@ def set_args():
 
 
 if __name__ == "__main__":
-    
     ## env config
     villa_path, junit_path, sys_classpath, agent_path, \
         pwd, proj_dir, go, dyng_go, fe_path, cust_mvn_repo = config_env()
@@ -234,6 +235,8 @@ if __name__ == "__main__":
         else:
             os.makedirs(go)
     separate_go = (dyng_go, go)
+
+    ProjectUtils.init(proj_dir, go)
     
     '''
         0-th: backup current branch work in stash for the last pass to restore
@@ -361,5 +364,4 @@ if __name__ == "__main__":
             all_changed_tests, old_changed_tests, new_changed_tests,
             old_test_set, new_test_set,
             prev_hash, post_hash, old_l2m, new_l2m, old_m2l, new_m2l)
-    
     print 'Quit Getty.'

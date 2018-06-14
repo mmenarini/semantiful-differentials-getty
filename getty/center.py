@@ -11,7 +11,8 @@ import os as py_os
 
 import agency
 import config
-from tools import daikon, ex, git, html, mvn, os, profiler
+from tools.project_utils import ProjectUtils
+from tools import java, daikon, ex, git, html, os, profiler, maven_adapter, git_adapter
 
 
 SHOW_DEBUG_INFO = config.show_debug_info
@@ -61,7 +62,7 @@ def sort_txt_inv(out_file):
 def all_methods_expansion(candidates, go, this_hash, index, java_cmd, inv_gz):
     exp_tmp = go + "expansion_temp." + this_hash + "." + str(index) + ".allinvs"
     run_print_allinvs = " ".join([java_cmd, "daikon.PrintInvariants", "--output", exp_tmp, inv_gz])
-    os.sys_call(run_print_allinvs, ignore_bad_exit=True)
+    os.sys_call(run_print_allinvs, ignore_bad_exit=True, cwd=ProjectUtils.get_version_path(this_hash))
     regex_header = "(.*):::(ENTER|EXIT|CLASS|OBJECT|THROW).*"
     with open(exp_tmp, 'r') as rf:
         alllines = rf.read().split("\n")
@@ -133,7 +134,7 @@ def seq_get_invs(target_set_index_pair, java_cmd, junit_torun, go, this_hash, co
                   junit_torun])
     if SHOW_DEBUG_INFO:
         print "\n=== Daikon:Chicory+Daikon(online) command to run: \n" + run_chicory_daikon
-    os.sys_call(run_chicory_daikon, ignore_bad_exit=True)
+    os.sys_call(run_chicory_daikon, ignore_bad_exit=True, cwd=ProjectUtils.get_version_path(this_hash))
     
     expansion = set()
     if consider_expansion and config.class_level_expansion:
@@ -188,7 +189,7 @@ def seq_get_invs(target_set_index_pair, java_cmd, junit_torun, go, this_hash, co
                               bar_length=50)
         elif SHOW_MORE_DEBUG_INFO:
             print "\n=== Daikon:PrintInvs command to run: \n" + run_printinv
-        os.sys_call(run_printinv, ignore_bad_exit=True)
+        os.sys_call(run_printinv, ignore_bad_exit=True, cwd=ProjectUtils.get_version_path(this_hash))
         sort_txt_inv(out_file)
 
         result = create_inv_out_file_per_method(out_file, all_to_consider, this_hash, go)
@@ -240,7 +241,7 @@ def create_inv_out_file_per_method(out_file, methods_to_consider, this_hash, go)
 
             if re.search(regex, inv):
 
-                print "=== writing: " + out_file
+                # print "=== writing: " + out_file
                 f = open(out_file, "a+")
                 file_created = True
 
@@ -278,45 +279,35 @@ def get_expansion_set(go):
 def one_info_pass(
         junit_path, sys_classpath, agent_path, cust_mvn_repo, dyng_go, go, this_hash, target_set,
         changed_methods, changed_tests, inner_dataflow_methods, outer_dataflow_methods, json_filepath):
-    os.sys_call("git checkout " + this_hash)
-    os.sys_call("mvn clean")
 
-    bin_path = mvn.path_from_mvn_call("outputDirectory")
-    test_bin_path = mvn.path_from_mvn_call("testOutputDirectory")
-    cp = mvn.full_classpath(junit_path, sys_classpath, bin_path, test_bin_path)
+    bin_path = maven_adapter.get_bin_path(this_hash)
+    test_bin_path = maven_adapter.get_test_bin_path(this_hash)
+    cp = maven_adapter.get_full_class_path(this_hash, junit_path, sys_classpath, bin_path, test_bin_path)
     if SHOW_DEBUG_INFO:
         print "\n===full classpath===\n" + cp + "\n"
-    
+
     print "\ncopying all code to specific directory ...\n"
-    all_code_dirs = [mvn.path_from_mvn_call("sourceDirectory"),
-                     # mvn.path_from_mvn_call("scriptSourceDirectory"),
-                     mvn.path_from_mvn_call("testSourceDirectory")]
+    all_code_dirs = [maven_adapter.get_source_directory(this_hash),
+                     maven_adapter.get_test_source_directory(this_hash)]
     getty_code_store = go + '_getty_allcode_' + this_hash + '_/'
     print 'copy to ' + getty_code_store + '\n'
     makedirs(getty_code_store)
     for adir in all_code_dirs:
         os.sys_call(" ".join(["cp -r", adir + "/*", getty_code_store]), ignore_bad_exit=True)
-    
     if config.use_special_junit_for_dyn:
         info_junit_path = os.rreplace(junit_path, config.default_junit_version, config.special_junit_version, 1)
-        infocp = mvn.full_classpath(info_junit_path, sys_classpath, bin_path, test_bin_path)
+        # infocp = mvn.full_classpath(info_junit_path, sys_classpath, bin_path, test_bin_path)
+        infocp = maven_adapter.get_full_class_path(this_hash, info_junit_path, sys_classpath, bin_path, test_bin_path)
     else:
         infocp = cp
-    java_cmd = " ".join(["java", "-cp", infocp, 
-#                         "-Xms"+config.min_heap, 
-                         "-Xmx"+config.max_heap, 
-                         "-XX:+UseConcMarkSweepGC", 
-#                          "-XX:-UseGCOverheadLimit",
-                         "-XX:-UseSplitVerifier",  # FIXME: JDK 8- only! 
-                         ])
-    
+
     # os.sys_call("mvn test -DskipTests", ignore_bad_exit=True)
-    os.sys_call("mvn test-compile")
-    
-    junit_torun = mvn.junit_torun_str(cust_mvn_repo)
+    maven_adapter.compile_tests(this_hash)
+
+    junit_torun = maven_adapter.get_junit_torun(cust_mvn_repo, this_hash)
     if SHOW_DEBUG_INFO:
         print "\n===junit torun===\n" + junit_torun + "\n"
-    
+
     #### dynamic run one round for all information    
     prefixes = daikon.common_prefixes(target_set)
     common_package = ''
@@ -331,22 +322,12 @@ def one_info_pass(
     instrument_regex = "|".join(prefix_regexes)
     if SHOW_DEBUG_INFO:
         print "\n===instrumentation pattern===\n" + instrument_regex + "\n"
-    # run tests with instrumentation
-    run_instrumented_tests = \
-        " ".join([java_cmd, "-ea",
-                  "-javaagent:" + agent_path + "=\"" + instrument_regex + "\"",
-                  junit_torun])
-    if SHOW_DEBUG_INFO:
-        print "\n=== Instrumented testing command to run: \n" + run_instrumented_tests
-    
+
     if not path.exists(dyng_go):
         makedirs(dyng_go)
-    
-    full_info_exfile = go + "_getty_binary_info_" + this_hash + "_.ex"
-    os.sys_call(run_instrumented_tests +
-                    " > " + full_info_exfile +
-                    ("" if config.show_stack_trace_info else " 2> /dev/null"),
-                ignore_bad_exit=True)
+
+    full_info_exfile = java.run_instrumented_tests(this_hash, go, infocp, agent_path, instrument_regex, junit_torun)
+
     full_method_info_map = {}
     ext_start_index = len(config.method_info_line_prefix)
     with open(full_info_exfile, 'r') as f:
@@ -357,6 +338,8 @@ def one_info_pass(
                 rawdata = line[ext_start_index:]
                 k, v = rawdata.split(" : ")
                 full_method_info_map[k.strip()] = v.strip()
+
+    print "dyng_go=", dyng_go, " go=", go
 
     os.merge_dyn_files(dyng_go, go, "_getty_dyncg_-hash-_.ex", this_hash)
     os.merge_dyn_files(dyng_go, go, "_getty_dynfg_-hash-_.ex", this_hash)
@@ -378,11 +361,11 @@ def one_info_pass(
     profiler.log_csv(["method_count", "test_count", "refined_target_count"],
                      [[len(target_set), len(test_set), len(refined_target_set)]],
                      go + "_getty_y_method_count_" + this_hash + "_.profile.readable")
-    
+
     git.clear_temp_checkout(this_hash)
-    
+
     return common_package, test_set, refined_target_set, changed_methods, changed_tests, \
-        cp, junit_torun, full_method_info_map
+           cp, junit_torun, full_method_info_map
 
 
 def get_tests_and_target_set(go, json_filepath, junit_torun, this_hash):
@@ -548,9 +531,9 @@ def create_methods_to_tests(fname, junit_torun):
 def one_inv_pass(go, cp, junit_torun, this_hash, refined_target_set, test_selection, analysis_only=False):
 
     if not analysis_only:
-        os.sys_call("git checkout " + this_hash)
+        git_adapter.checkout(this_hash)
 
-    os.sys_call("mvn clean")
+    # maven_adapter.maven_clean()
 
     if SHOW_DEBUG_INFO:
         print "\n===full classpath===\n" + cp + "\n"
@@ -560,11 +543,11 @@ def one_inv_pass(go, cp, junit_torun, this_hash, refined_target_set, test_select
                          "-Xmx"+config.max_heap,
                          "-XX:+UseConcMarkSweepGC",
                          #                          "-XX:-UseGCOverheadLimit",
-                         "-XX:-UseSplitVerifier",  # FIXME: JDK 8- only! 
+                         #"-XX:-UseSplitVerifier",  # FIXME: JDK 8- only!
                          ])
 
     # os.sys_call("mvn test -DskipTests", ignore_bad_exit=True)
-    os.sys_call("mvn test-compile")
+    maven_adapter.compile_tests(this_hash)
 
     if SHOW_DEBUG_INFO:
         print "\n===junit torun===\n" + junit_torun + "\n"
@@ -652,7 +635,7 @@ def one_inv_pass(go, cp, junit_torun, this_hash, refined_target_set, test_select
     # include coverage report for compare
     if config.analyze_test_coverage and not analysis_only:
         try:
-            mvn.generate_coverage_report(go, this_hash)
+            maven_adapter.generate_test_report(go, this_hash)
         except:
             pass
 
@@ -676,8 +659,8 @@ def mixed_passes(go, prev_hash, post_hash, refined_expansion_set,
     else:
         impact_set = refined_target_set
     # checkout old commit, then checkout new tests
-    os.sys_call("git checkout " + prev_hash)
-    new_test_path = mvn.path_from_mvn_call("testSourceDirectory")
+    git_adapter.checkout(prev_hash)
+    new_test_path = maven_adapter.get_test_source_directory(prev_hash)
     os.sys_call(" ".join(["git", "checkout", post_hash, new_test_path]))
 #     # may need to check whether it is compilable, return code?
 #     os.sys_call("mvn clean test-compile")
@@ -687,8 +670,8 @@ def mixed_passes(go, prev_hash, post_hash, refined_expansion_set,
     git.clear_temp_checkout(prev_hash)
     
     # checkout old commit, then checkout new src
-    os.sys_call("git checkout " + prev_hash)
-    new_src_path = mvn.path_from_mvn_call("sourceDirectory")
+    git_adapter.checkout(prev_hash)
+    new_src_path = maven_adapter.get_source_directory(prev_hash)
     os.sys_call(" ".join(["git", "checkout", post_hash, new_src_path]))
 #     # may need to check whether it is compilable, return code?
 #     os.sys_call("mvn clean test-compile")
