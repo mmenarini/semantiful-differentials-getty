@@ -12,7 +12,7 @@ import os as py_os
 import agency
 import config
 from tools.project_utils import ProjectUtils
-from tools import java, daikon, ex, git, html, os, profiler, maven_adapter
+from tools import java, daikon, ex, git, html, os, profiler, maven_adapter, git_adapter
 
 
 SHOW_DEBUG_INFO = config.show_debug_info
@@ -279,8 +279,6 @@ def get_expansion_set(go):
 def one_info_pass(
         junit_path, sys_classpath, agent_path, cust_mvn_repo, dyng_go, go, this_hash, target_set,
         changed_methods, changed_tests, inner_dataflow_methods, outer_dataflow_methods, json_filepath):
-    # os.sys_call("git checkout " + this_hash)
-    # os.sys_call("mvn clean")
 
     bin_path = maven_adapter.get_bin_path(this_hash)
     test_bin_path = maven_adapter.get_test_bin_path(this_hash)
@@ -533,7 +531,7 @@ def create_methods_to_tests(fname, junit_torun):
 def one_inv_pass(go, cp, junit_torun, this_hash, refined_target_set, test_selection, analysis_only=False):
 
     if not analysis_only:
-        os.sys_call("git checkout " + this_hash)
+        git_adapter.checkout(this_hash)
 
     # maven_adapter.maven_clean()
 
@@ -661,7 +659,7 @@ def mixed_passes(go, prev_hash, post_hash, refined_expansion_set,
     else:
         impact_set = refined_target_set
     # checkout old commit, then checkout new tests
-    os.sys_call("git checkout " + prev_hash)
+    git_adapter.checkout(prev_hash)
     new_test_path = maven_adapter.get_test_source_directory(prev_hash)
     os.sys_call(" ".join(["git", "checkout", post_hash, new_test_path]))
 #     # may need to check whether it is compilable, return code?
@@ -672,7 +670,7 @@ def mixed_passes(go, prev_hash, post_hash, refined_expansion_set,
     git.clear_temp_checkout(prev_hash)
     
     # checkout old commit, then checkout new src
-    os.sys_call("git checkout " + prev_hash)
+    git_adapter.checkout(prev_hash)
     new_src_path = maven_adapter.get_source_directory(prev_hash)
     os.sys_call(" ".join(["git", "checkout", post_hash, new_src_path]))
 #     # may need to check whether it is compilable, return code?

@@ -6,8 +6,6 @@ from tools import ex, git, os, maven_adapter
 
 
 def checkout_build(commit_hash):
-    # os.sys_call("git checkout " + commit_hash)
-    # os.sys_call("mvn clean")
 
     # TODO: change maven adapter to checkout_build_output_dir path
     bin_path = maven_adapter.get_bin_path(commit_hash)
