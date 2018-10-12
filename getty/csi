@@ -301,6 +301,7 @@ if __name__ == "__main__":
                  new_improved_changed_methods, new_changed_tests, new_inner_dataflow_methods, new_outer_dataflow_methods, json_filepath)",
             go + "_getty_x_profile_center.profile")
     else:
+        # Most of these returned values are not needed if using plugin
         common_package, all_classes_set, all_refined_target_set, old_test_set, old_refined_target_set, new_test_set, new_refined_target_set, \
             old_changed_methods, new_changed_methods, old_changed_tests, new_changed_tests, all_changed_methods, all_changed_tests = \
             center.visit(junit_path, sys_classpath, agent_path, cust_mvn_repo, separate_go, prev_hash, post_hash, targets, iso,
