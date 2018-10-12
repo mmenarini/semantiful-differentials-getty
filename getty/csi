@@ -306,11 +306,12 @@ if __name__ == "__main__":
             center.visit(junit_path, sys_classpath, agent_path, cust_mvn_repo, separate_go, prev_hash, post_hash, targets, iso,
                          old_improved_changed_methods, old_changed_tests, old_inner_dataflow_methods, old_outer_dataflow_methods, 
                          new_improved_changed_methods, new_changed_tests, new_inner_dataflow_methods, new_outer_dataflow_methods, json_filepath)
-    
-    old_caller_of, old_callee_of = agency.caller_callee(go, prev_hash)
-    old_pred_of, old_succ_of = agency.pred_succ(go, prev_hash)
-    new_caller_of, new_callee_of = agency.caller_callee(go, post_hash)
-    new_pred_of, new_succ_of = agency.pred_succ(go, post_hash)
+    if json_filepath == "":
+        # only used for gallery, which is not run if we have a priority json file
+        old_caller_of, old_callee_of = agency.caller_callee(go, prev_hash)
+        old_pred_of, old_succ_of = agency.pred_succ(go, prev_hash)
+        new_caller_of, new_callee_of = agency.caller_callee(go, post_hash)
+        new_pred_of, new_succ_of = agency.pred_succ(go, post_hash)
     
 #     # DEBUG ONLY
 #     print "Debug info: "
