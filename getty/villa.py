@@ -81,8 +81,6 @@ def visit(villa_path, pwd, proj_dir, go, prev_hash, post_hash, pkg_prefix="-"):
     new_all_methods = ex.read_str_from(go + "_getty_allmtd_src_{0}_.ex".format(post_hash))
     new_l2m = ex.read_str_from(go + "_getty_fl2m_{0}_.ex".format(post_hash))
     new_m2l = ex.read_str_from(go + "_getty_fm2l_{0}_.ex".format(post_hash))
-    new_inner_dataflow_methods = ex.read_str_from(go + "_getty_dfinner_{0}_.ex".format(post_hash))
-    new_outer_dataflow_methods = ex.read_str_from(go + "_getty_dfouter_{0}_.ex".format(post_hash))
     new_changed_tests = ex.read_str_from(go + "_getty_chgmtd_test_new_{0}_.ex".format(post_hash))
 
     git.clear_temp_checkout(post_hash)
@@ -105,18 +103,12 @@ def visit(villa_path, pwd, proj_dir, go, prev_hash, post_hash, pkg_prefix="-"):
     # TODO or FIXME
     # old_all_ccc_related = ex.read_str_from(go + "_getty_cccmtd_{0}_.ex".format(prev_hash))  # not needed for now
     # old_all_cccs = ex.read_str_from(go + "_getty_ccc_{0}_.ex".format(prev_hash))  # not needed for now
-    old_inner_dataflow_methods = ex.read_str_from(go + "_getty_dfinner_{0}_.ex".format(prev_hash))
-    old_outer_dataflow_methods = ex.read_str_from(go + "_getty_dfouter_{0}_.ex".format(prev_hash))
 
     git.clear_temp_checkout(prev_hash)
 
     print 'Villa analysis is completed.'
     return old_changed_methods, old_improved_changed_methods, old_added_changed_methods, \
-           old_all_methods, \
-           old_inner_dataflow_methods, old_outer_dataflow_methods, \
-           old_l2m, old_m2l, \
+           old_all_methods, old_l2m, old_m2l, \
            new_changed_methods, new_improved_changed_methods, new_removed_changed_methods, \
-           new_all_methods, \
-           new_inner_dataflow_methods, new_outer_dataflow_methods, \
-           new_l2m, new_m2l, \
+           new_all_methods, new_l2m, new_m2l, \
            old_changed_tests, new_changed_tests

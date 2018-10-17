@@ -253,25 +253,17 @@ if __name__ == "__main__":
     if config.profile_performance:
         profiler.run_and_report(
             "old_changed_methods, old_improved_changed_methods, old_added_changed_methods, \
-             old_all_methods, \
-             old_inner_dataflow_methods, old_outer_dataflow_methods, \
-             old_l2m, old_m2l, \
+             old_all_methods, old_l2m, old_m2l, \
              new_changed_methods, new_improved_changed_methods, new_removed_changed_methods, \
-             new_all_methods, \
-             new_inner_dataflow_methods, new_outer_dataflow_methods, \
-             new_l2m, new_m2l, \
+             new_all_methods, new_l2m, new_m2l, \
              old_changed_tests, new_changed_tests = \
                  villa.visit(villa_path, pwd, proj_dir, go, prev_hash, post_hash)",
             go + "_getty_x_profile_villa.profile")
     else:
         old_changed_methods, old_improved_changed_methods, old_added_changed_methods, \
-        old_all_methods, \
-        old_inner_dataflow_methods, old_outer_dataflow_methods, \
-        old_l2m, old_m2l, \
+        old_all_methods, old_l2m, old_m2l, \
         new_changed_methods, new_improved_changed_methods, new_removed_changed_methods, \
-        new_all_methods, \
-        new_inner_dataflow_methods, new_outer_dataflow_methods, \
-        new_l2m, new_m2l, \
+        new_all_methods, new_l2m, new_m2l, \
         old_changed_tests, new_changed_tests = \
             villa.visit(villa_path, pwd, proj_dir, go, prev_hash, post_hash)
 
@@ -297,44 +289,22 @@ if __name__ == "__main__":
             "common_package, all_classes_set, all_refined_target_set, old_test_set, old_refined_target_set, new_test_set, new_refined_target_set, \
                  old_changed_methods, new_changed_methods, old_changed_tests, new_changed_tests, all_changed_methods, all_changed_tests = \
                  center.visit(junit_path, sys_classpath, agent_path, cust_mvn_repo, separate_go, prev_hash, post_hash, targets, iso, \
-                 old_improved_changed_methods, old_changed_tests, old_inner_dataflow_methods, old_outer_dataflow_methods, \
-                 new_improved_changed_methods, new_changed_tests, new_inner_dataflow_methods, new_outer_dataflow_methods, json_filepath)",
+                 old_improved_changed_methods, old_changed_tests, \
+                 new_improved_changed_methods, new_changed_tests, json_filepath)",
             go + "_getty_x_profile_center.profile")
     else:
         # Most of these returned values are not needed if using plugin
         common_package, all_classes_set, all_refined_target_set, old_test_set, old_refined_target_set, new_test_set, new_refined_target_set, \
         old_changed_methods, new_changed_methods, old_changed_tests, new_changed_tests, all_changed_methods, all_changed_tests = \
             center.visit(junit_path, sys_classpath, agent_path, cust_mvn_repo, separate_go, prev_hash, post_hash,
-                         targets, iso,
-                         old_improved_changed_methods, old_changed_tests, old_inner_dataflow_methods,
-                         old_outer_dataflow_methods,
-                         new_improved_changed_methods, new_changed_tests, new_inner_dataflow_methods,
-                         new_outer_dataflow_methods, json_filepath)
-    if json_filepath == "":
+                         targets, iso, old_improved_changed_methods, old_changed_tests,
+                         new_improved_changed_methods, new_changed_tests, json_filepath)
+    if json_filepath == "" or config.profile_performance:
         # only used for gallery, which is not run if we have a priority json file
         old_caller_of, old_callee_of = agency.caller_callee(go, prev_hash)
         old_pred_of, old_succ_of = agency.pred_succ(go, prev_hash)
         new_caller_of, new_callee_of = agency.caller_callee(go, post_hash)
         new_pred_of, new_succ_of = agency.pred_succ(go, post_hash)
-
-    #     # DEBUG ONLY
-    #     print "Debug info: "
-    #     print old_caller_of
-    #     print old_callee_of
-    #     print old_pred_of
-    #     print old_succ_of
-    #     print new_caller_of
-    #     print new_callee_of
-    #     print new_pred_of
-    #     print new_succ_of
-
-    #     # DEBUG ONLY
-    #     for aset in [old_changed_methods, new_changed_methods,
-    #                  old_changed_tests, new_changed_tests,
-    #                  old_refined_target_set, new_refined_target_set,
-    #                  all_refined_target_set]:
-    #         print aset
-    #         print ""
 
     '''
         before last: restore original branch and all its pending work
