@@ -355,8 +355,7 @@ def one_info_pass(
     refined_target_set, changed_methods, changed_tests = \
         agency.refine_targets(full_method_info_map, target_set, test_set,
                               caller_of, callee_of, pred_of, succ_of,
-                              changed_methods, changed_tests,
-                              inner_dataflow_methods, outer_dataflow_methods, json_filepath)
+                              changed_methods, changed_tests, json_filepath)
 
     profiler.log_csv(["method_count", "test_count", "refined_target_count"],
                      [[len(target_set), len(test_set), len(refined_target_set)]],
