@@ -1,5 +1,4 @@
-import json
-from os import chdir, path, makedirs
+from os import chdir
 
 import config
 from tools import ex, git, os, maven_adapter
@@ -12,15 +11,8 @@ def checkout_build(commit_hash):
     src_rel_path = maven_adapter.get_source_directory(commit_hash)
     test_src_rel_path = maven_adapter.get_test_source_directory(commit_hash)
 
-    # if src_rel_path.startswith(proj_dir):
-    #     src_rel_path = src_rel_path[len(proj_dir):]
-    # else:
-    #     raise ValueError("proj_dir is not a prefix of src path")
+
     print "current src path (relative): " + src_rel_path + "\n"
-    # if test_src_rel_path.startswith(proj_dir):
-    #     test_src_rel_path = test_src_rel_path[len(proj_dir):]
-    # else:
-    #     raise ValueError("proj_dir is not a prefix of test src path")
     print "current test src path (relative): " + test_src_rel_path + "\n"
 
     maven_adapter.compile_tests(commit_hash)
@@ -62,12 +54,6 @@ def visit(villa_path, pwd, proj_dir, go, prev_hash, post_hash, pkg_prefix="-"):
     old_l2m = ex.read_str_from(go + "_getty_fl2m_{0}_.ex".format(prev_hash))
     old_m2l = ex.read_str_from(go + "_getty_fm2l_{0}_.ex".format(prev_hash))
     old_changed_tests = ex.read_str_from(go + "_getty_chgmtd_test_old_{0}_.ex".format(prev_hash))
-#     # DEBUG ONLY
-#     print old_changed_methods
-#     print len(old_all_methods)
-#     print old_l2m
-#     print old_m2l
-#     print old_changed_tests
     
     git.clear_temp_checkout(prev_hash)
     
@@ -99,18 +85,6 @@ def visit(villa_path, pwd, proj_dir, go, prev_hash, post_hash, pkg_prefix="-"):
     new_inner_dataflow_methods = ex.read_str_from(go + "_getty_dfinner_{0}_.ex".format(post_hash))
     new_outer_dataflow_methods = ex.read_str_from(go + "_getty_dfouter_{0}_.ex".format(post_hash))
     new_changed_tests = ex.read_str_from(go + "_getty_chgmtd_test_new_{0}_.ex".format(post_hash))
-#     # DEBUG ONLY
-#     print new_changed_methods
-#     print new_improved_changed_methods
-#     print new_removed_changed_methods
-#     print new_all_ccc_related
-#     print new_all_cccs
-#     print len(new_all_methods)
-#     print new_l2m
-#     print new_m2l
-#     print new_inner_dataflow_methods
-#     print new_outer_dataflow_methods
-#     print new_changed_tests
     
     git.clear_temp_checkout(post_hash)
     
@@ -134,15 +108,6 @@ def visit(villa_path, pwd, proj_dir, go, prev_hash, post_hash, pkg_prefix="-"):
     # old_all_cccs = ex.read_str_from(go + "_getty_ccc_{0}_.ex".format(prev_hash))  # not needed for now
     old_inner_dataflow_methods = ex.read_str_from(go + "_getty_dfinner_{0}_.ex".format(prev_hash))
     old_outer_dataflow_methods = ex.read_str_from(go + "_getty_dfouter_{0}_.ex".format(prev_hash))
-#     # DEBUG ONLY
-#     print old_changed_methods
-#     print old_improved_changed_methods
-#     print old_added_changed_methods
-#     print old_all_ccc_related
-#     print old_all_cccs
-#     print len(old_all_methods)
-#     print old_inner_dataflow_methods
-#     print old_outer_dataflow_methods
     
     git.clear_temp_checkout(prev_hash)
     
@@ -156,4 +121,3 @@ def visit(villa_path, pwd, proj_dir, go, prev_hash, post_hash, pkg_prefix="-"):
         new_inner_dataflow_methods, new_outer_dataflow_methods, \
         new_l2m, new_m2l, \
         old_changed_tests, new_changed_tests
-#         list(set(old_changed_tests + new_changed_tests))
