@@ -412,8 +412,6 @@ def get_tests_and_target_set(go, json_filepath, junit_torun, this_hash):
                                                                                   types_to_methods)
 
             methods_to_check.remove(m)
-    print "target setttt"
-    print target_set
     # add each corresponding junit suite to junit to run
     tests_for_junit = set()
     for test in test_set:
@@ -431,45 +429,39 @@ def add_to_targetset(methods_to_check, methods_to_tests, target, target_set, tes
     method = ""
     # check to see if method is eventually called by a test
     for m in methods_to_tests:
+        # if eventually called by a test then add to target set
+        # add tests that call it to test set
         if m[:len(s)] == s:
-            method = m
+            methodNumber = m[(m.rfind("-")):]
+            target_set.add(target + methodNumber)
+            # methods to check are for checking if there are called methods within target
+            methods_to_check.add(m)
+            # add corresponding test to test set
+            for test in methods_to_tests[m]:
+                test_set.add(test)
             break
-
-    # if eventually called by a test then add to target set
-    # add tests that call it to test set
-    if method:
-        methodNumber = method[(method.rfind("-")):]
-        target_set.add(target + methodNumber)
-        for test in methods_to_tests[method]:
-            test_set.add(test)
-            # methodNumber = test[(test.rfind("-")):]
-            # target_set.add(target + methodNumber)
-            # methods_to_check.add(test)
-        # methods to check are for checking if there are called methods within target
-        methods_to_check.add(method)
-    # else it must be a method that belongs to a type. Get methods that implement it
+    # it could be a method that belongs to a interface. Get methods that implement it
     # or are in a subclass of it
-    else:
-        index = target.find(":")
-        type = target[:index]
-        method_name = target[index:]
-        method_name = method_name.strip()
-        # check to see if type is a valid type
-        if type in types_to_methods:
-            # for each method in the type get corresponding subtype method
-            for m in types_to_methods[type]:
-                m = m.strip()
-                i = m.rfind(":")
-                if m[i:] == method_name:
-                    for key in methods_to_tests:
-                        # add corresponding subtype method to target set and
-                        # tests that call it to test set
-                        if key[:len(m)] == m:
-                            methodNumber = key[(key.rfind("-")):]
-                            target_set.add(m + methodNumber)
-                            for test in methods_to_tests[key]:
-                                test_set.add(test)
-                            methods_to_check.add(key)
+    index = target.find(":")
+    type = target[:index]
+    method_name = target[index:]
+    method_name = method_name.strip()
+    # check to see if type is a valid type
+    if type in types_to_methods:
+        # for each method in the type get corresponding subtype method
+        for m in types_to_methods[type]:
+            m = m.strip()
+            i = m.rfind(":")
+            if m[i:] == method_name:
+                for key in methods_to_tests:
+                    # add corresponding subtype method to target set and
+                    # tests that call it to test set
+                    if key[:len(m)] == m:
+                        methodNumber = key[(key.rfind("-")):]
+                        target_set.add(m + methodNumber)
+                        for test in methods_to_tests[key]:
+                            test_set.add(test)
+                        methods_to_check.add(key)
     return target_set, test_set, methods_to_check
 
 
