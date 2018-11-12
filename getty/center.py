@@ -379,6 +379,7 @@ def get_tests_and_target_set(go, json_filepath, junit_torun, this_hash):
     for priority in priorities["priorityList"]:
         package = priority.split(":")
         # check if package name is a test suite. if so then it is a test.
+        # This means we add the methods that are called by the test to the target set
         testSuites = junit_torun.split(" ")
         if package[0] in testSuites:
             priority = priority + "("
