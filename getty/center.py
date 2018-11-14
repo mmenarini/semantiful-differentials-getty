@@ -366,7 +366,7 @@ def get_tests_and_target_set(go, json_filepath, junit_torun, this_hash):
     # have to add junit runner to junit_to_run in order to get invariants
     junits_to_run = junit_torun.split(" ")
     junit_to_run = junits_to_run[0]
-    #getting method -> tests
+    # getting method -> tests
     fname = go + "_getty_dyncg_" + this_hash + "_.ex"
     methods_to_tests, nontest_method_calls = create_methods_to_tests(fname, junit_torun)
     # get types_to_methods
